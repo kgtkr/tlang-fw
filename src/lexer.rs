@@ -99,9 +99,23 @@ impl Lexer {
             }
         }
 
-        for i in 0..s.len() {
+        for _ in 0..s.len() {
             self.next();
         }
         Some(())
+    }
+
+    fn ident_char(&mut self) -> Option<char> {
+        let c = self.peek()?;
+        if c.is_ascii_alphanumeric() || c == '_' {
+            self.next();
+            Some(c)
+        } else {
+            None
+        }
+    }
+
+    fn next_token(&mut self) -> Option<Token> {
+        unimplemented!();
     }
 }

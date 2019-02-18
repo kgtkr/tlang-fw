@@ -1,4 +1,5 @@
 mod lexer;
+mod stream;
 mod token;
 
 fn main() {
