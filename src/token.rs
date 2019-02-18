@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, PartialEq)]
-struct Token {
+pub struct Token {
     kind: Kind,
     pos: usize,
     len: usize,

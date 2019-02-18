@@ -91,4 +91,17 @@ impl Lexer {
             self.spaces();
         }
     }
+
+    fn string(&mut self, s: String) -> Option<()> {
+        for (i, c) in s.chars().enumerate() {
+            if self.peek_index(i) != Some(c) {
+                return None;
+            }
+        }
+
+        for i in 0..s.len() {
+            self.next();
+        }
+        Some(())
+    }
 }
