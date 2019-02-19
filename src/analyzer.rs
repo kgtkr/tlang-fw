@@ -1,7 +1,7 @@
 use crate::stream::Stream;
 use std::marker::PhantomData;
 
-trait Analyzer {
+pub trait Analyzer {
     type Input;
     type Output;
     fn analyze(&self, stream: &mut Stream<Self::Input>) -> Option<Self::Output>;
@@ -12,10 +12,10 @@ trait Analyzer {
         Map::new(f, self)
     }
 }
-struct AnyOne<T: Clone>(PhantomData<T>);
+pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         AnyOne(PhantomData)
     }
 }
@@ -30,10 +30,10 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     }
 }
 
-struct Try<T: Analyzer>(T);
+pub struct Try<T: Analyzer>(T);
 
 impl<T: Analyzer> Try<T> {
-    fn new(x: T) -> Self {
+    pub fn new(x: T) -> Self {
         Try(x)
     }
 }
@@ -51,10 +51,10 @@ impl<T: Analyzer> Analyzer for Try<T> {
     }
 }
 
-struct Map<O, T: Analyzer, F: Fn(T::Output) -> O>(F, T, PhantomData<O>);
+pub struct Map<O, T: Analyzer, F: Fn(T::Output) -> O>(F, T, PhantomData<O>);
 
 impl<O, T: Analyzer, F: Fn(T::Output) -> O> Map<O, T, F> {
-    fn new(f: F, x: T) -> Self {
+    pub fn new(f: F, x: T) -> Self {
         Map(f, x, PhantomData)
     }
 }
