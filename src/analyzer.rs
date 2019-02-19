@@ -39,6 +39,27 @@ pub trait Analyzer {
     {
         Optional::new(self)
     }
+
+    fn many(self) -> Loop<Self>
+    where
+        Self: Sized,
+    {
+        Loop::new(self, None, None)
+    }
+
+    fn many1(self) -> Loop<Self>
+    where
+        Self: Sized,
+    {
+        Loop::new(self, Some(1), None)
+    }
+
+    fn many_n(self, n: usize) -> Loop<Self>
+    where
+        Self: Sized,
+    {
+        Loop::new(self, Some(n), Some(n))
+    }
 }
 
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
@@ -149,5 +170,41 @@ impl<A: Analyzer> Analyzer for Optional<A> {
     type Output = Option<A::Output>;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         Some(self.0.analyze(st))
+    }
+}
+
+pub struct Loop<A: Analyzer>(A, Option<usize>, Option<usize>);
+
+impl<A: Analyzer> Loop<A> {
+    pub fn new(a: A, x: Option<usize>, y: Option<usize>) -> Self {
+        Loop(a, x, y)
+    }
+}
+
+impl<A: Analyzer> Analyzer for Loop<A> {
+    type Input = A::Input;
+    type Output = Vec<A::Output>;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        let mut res = Vec::new();
+        for i in 0.. {
+            if let Some(max) = self.2 {
+                if i >= max {
+                    break;
+                }
+            }
+
+            match self.0.analyze(st) {
+                Some(x) => res.push(x),
+                None => break,
+            }
+        }
+
+        if let Some(min) = self.1 {
+            if res.len() < min {
+                return None;
+            }
+        }
+
+        Some(res)
     }
 }
