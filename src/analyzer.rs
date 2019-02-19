@@ -18,6 +18,13 @@ pub trait Analyzer {
     {
         Attempt::new(self)
     }
+
+    fn or<T: Analyzer<Input = Self::Input, Output = Self::Output>>(self, x: T) -> Or<Self, T>
+    where
+        Self: Sized,
+    {
+        Or::new(self, x)
+    }
 }
 
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
