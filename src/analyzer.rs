@@ -1,6 +1,8 @@
 use crate::stream::Stream;
 use std::marker::PhantomData;
 
+// TODO: expect,tokens,token
+
 pub trait Analyzer {
     type Input;
     type Output;
