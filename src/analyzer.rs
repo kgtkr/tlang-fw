@@ -12,11 +12,11 @@ pub trait Analyzer {
         Map::new(f, self)
     }
 
-    fn attempt(self) -> Try<Self>
+    fn attempt(self) -> Attempt<Self>
     where
         Self: Sized,
     {
-        Try::new(self)
+        Attempt::new(self)
     }
 }
 
@@ -42,15 +42,15 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     }
 }
 
-pub struct Try<T: Analyzer>(T);
+pub struct Attempt<T: Analyzer>(T);
 
-impl<T: Analyzer> Try<T> {
+impl<T: Analyzer> Attempt<T> {
     pub fn new(x: T) -> Self {
-        Try(x)
+        Attempt(x)
     }
 }
 
-impl<T: Analyzer> Analyzer for Try<T> {
+impl<T: Analyzer> Analyzer for Attempt<T> {
     type Input = T::Input;
     type Output = T::Output;
     fn analyze(&self, st: &mut Stream<T::Input>) -> Option<T::Output> {
