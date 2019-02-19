@@ -77,6 +77,10 @@ pub fn eof<T: Analyzer>() -> Eof<T> {
     Eof::new()
 }
 
+pub fn val<T: Clone, A: Analyzer>(x: T) -> Val<T, A> {
+    Val::new(x)
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -129,6 +133,22 @@ impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
     type Output = O;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         Some(self.0(self.1.analyze(st)?))
+    }
+}
+
+pub struct Val<T: Clone, A: Analyzer>(T, PhantomData<A>);
+
+impl<T: Clone, A: Analyzer> Val<T, A> {
+    pub fn new(x: T) -> Self {
+        Val(x, PhantomData)
+    }
+}
+
+impl<T: Clone, A: Analyzer> Analyzer for Val<T, A> {
+    type Input = A::Input;
+    type Output = T;
+    fn analyze(&self, _: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        Some(self.0.clone())
     }
 }
 
