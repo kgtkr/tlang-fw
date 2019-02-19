@@ -33,6 +33,13 @@ pub trait Analyzer {
         And::new(self, x)
     }
 
+    fn with<T: Analyzer<Input = Self::Input>>(self, x: T) -> With<Self, T>
+    where
+        Self: Sized,
+    {
+        With::new(self, x)
+    }
+
     fn optional(self) -> Optional<Self>
     where
         Self: Sized,
@@ -157,6 +164,23 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for And<A, B> {
     type Output = (A::Output, B::Output);
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         Some((self.0.analyze(st)?, self.1.analyze(st)?))
+    }
+}
+
+pub struct With<A: Analyzer, B: Analyzer<Input = A::Input>>(A, B);
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input>> With<A, B> {
+    pub fn new(a: A, b: B) -> Self {
+        With(a, b)
+    }
+}
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for With<A, B> {
+    type Input = A::Input;
+    type Output = B::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        self.0.analyze(st)?;
+        self.1.analyze(st)
     }
 }
 
