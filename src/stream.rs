@@ -2,12 +2,42 @@ use std::marker::PhantomData;
 
 struct Stream<T>(Vec<T>, usize);
 
+impl<T: Clone> Stream<T> {
+    fn peak(&self) -> Option<T> {
+        self.0.get(self.1).cloned()
+    }
+}
+
+impl<T> Stream<T> {
+    fn pos(&self) -> usize {
+        self.1
+    }
+
+    fn set_pos(&mut self, pos: usize) -> Option<()> {
+        if pos < self.0.len() {
+            self.1 = pos;
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    fn add_pos(&mut self, x: usize) -> Option<()> {
+        self.set_pos(self.pos() + x)
+    }
+}
+
 trait Analyzer {
     type Input;
     type Output;
     fn analyze(&self, stream: &mut Stream<Self::Input>) -> Option<Self::Output>;
+    fn map<T, F: Fn(Self::Output) -> T>(self, f: F) -> Map<T, Self, F>
+    where
+        Self: Sized,
+    {
+        Map::new(f, self)
+    }
 }
-
 struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -19,9 +49,9 @@ impl<T: Clone> AnyOne<T> {
 impl<T: Clone> Analyzer for AnyOne<T> {
     type Input = T;
     type Output = T;
-    fn analyze(&self, Stream(data, pos): &mut Stream<Self::Input>) -> Option<Self::Output> {
-        let val = data.get(*pos).cloned()?;
-        *pos += 1;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        let val = st.peak()?;
+        st.add_pos(1);
         Some(val)
     }
 }
@@ -38,10 +68,10 @@ impl<T: Analyzer> Analyzer for Try<T> {
     type Input = T::Input;
     type Output = T::Output;
     fn analyze(&self, st: &mut Stream<T::Input>) -> Option<T::Output> {
-        let pos = st.1;
+        let pos = st.pos();
         let res = self.0.analyze(st);
         if let None = res {
-            st.1 = pos;
+            st.set_pos(pos);
         }
         res
     }
