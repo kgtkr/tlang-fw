@@ -66,6 +66,10 @@ pub fn anyOne<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
 
+pub fn eof<T: Analyzer>() -> Eof<T> {
+    Eof::new()
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -206,5 +210,25 @@ impl<A: Analyzer> Analyzer for Loop<A> {
         }
 
         Some(res)
+    }
+}
+
+pub struct Eof<A: Analyzer>(PhantomData<A>);
+
+impl<A: Analyzer> Eof<A> {
+    pub fn new() -> Self {
+        Eof(PhantomData)
+    }
+}
+
+impl<A: Analyzer> Analyzer for Eof<A> {
+    type Input = A::Input;
+    type Output = ();
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        if st.eof() {
+            Some(())
+        } else {
+            None
+        }
     }
 }
