@@ -11,7 +11,19 @@ pub trait Analyzer {
     {
         Map::new(f, self)
     }
+
+    fn attempt(self) -> Try<Self>
+    where
+        Self: Sized,
+    {
+        Try::new(self)
+    }
 }
+
+pub fn anyOne() -> AnyOne {
+    AnyOne::new()
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -64,5 +76,24 @@ impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
     type Output = O;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         Some(self.0(self.1.analyze(st)?))
+    }
+}
+
+pub struct Or<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>>(A, B);
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Or<A, B> {
+    pub fn new(a: A, b: B) -> Self {
+        Or(a, b)
+    }
+}
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer for Or<A, B> {
+    type Input = A::Input;
+    type Output = B::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        match self.0.analyze(st) {
+            None => self.1.analyze(st),
+            x => x,
+        }
     }
 }
