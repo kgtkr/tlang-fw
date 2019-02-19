@@ -20,7 +20,7 @@ pub trait Analyzer {
     }
 }
 
-pub fn anyOne() -> AnyOne {
+pub fn anyOne<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
 
