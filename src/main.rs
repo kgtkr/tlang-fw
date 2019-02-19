@@ -1,3 +1,4 @@
+mod analyzer;
 mod lexer;
 mod stream;
 mod token;
