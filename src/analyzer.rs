@@ -32,6 +32,13 @@ pub trait Analyzer {
     {
         And::new(self, x)
     }
+
+    fn optional(self) -> Optional<Self>
+    where
+        Self: Sized,
+    {
+        Optional::new(self)
+    }
 }
 
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
@@ -126,5 +133,21 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for And<A, B> {
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         self.0.analyze(st)?;
         self.1.analyze(st)
+    }
+}
+
+pub struct Optional<A: Analyzer>(A);
+
+impl<A: Analyzer> Optional<A> {
+    pub fn new(a: A) -> Self {
+        Optional(a)
+    }
+}
+
+impl<A: Analyzer> Analyzer for Optional<A> {
+    type Input = A::Input;
+    type Output = Option<A::Output>;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        Some(self.0.analyze(st))
     }
 }
