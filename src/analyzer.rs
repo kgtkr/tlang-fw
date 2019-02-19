@@ -154,10 +154,9 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> And<A, B> {
 
 impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for And<A, B> {
     type Input = A::Input;
-    type Output = B::Output;
+    type Output = (A::Output, B::Output);
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        self.0.analyze(st)?;
-        self.1.analyze(st)
+        Some((self.0.analyze(st)?, self.1.analyze(st)?))
     }
 }
 
