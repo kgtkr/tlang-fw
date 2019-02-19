@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 struct Stream<T>(Vec<T>, usize);
 
 trait Analyzer {
@@ -6,18 +8,18 @@ trait Analyzer {
     fn analyze(&self, stream: &mut Stream<Self::Input>) -> Option<Self::Output>;
 }
 
-struct AnyOne<T: Clone>(std::marker::PhantomData<T>);
+struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
     fn new() -> Self {
-        AnyOne(std::marker::PhantomData)
+        AnyOne(PhantomData)
     }
 }
 
 impl<T: Clone> Analyzer for AnyOne<T> {
     type Input = T;
     type Output = T;
-    fn analyze(&self, Stream(data, pos): &mut Stream<T>) -> Option<T> {
+    fn analyze(&self, Stream(data, pos): &mut Stream<Self::Input>) -> Option<Self::Output> {
         let val = data.get(*pos).cloned()?;
         *pos += 1;
         Some(val)
@@ -27,7 +29,7 @@ impl<T: Clone> Analyzer for AnyOne<T> {
 struct Try<T: Analyzer>(T);
 
 impl<T: Analyzer> Try<T> {
-    fn new(x: T) -> Try<T> {
+    fn new(x: T) -> Self {
         Try(x)
     }
 }
@@ -42,5 +44,21 @@ impl<T: Analyzer> Analyzer for Try<T> {
             st.1 = pos;
         }
         res
+    }
+}
+
+struct Map<O, T: Analyzer, F: Fn(T::Output) -> O>(F, T, PhantomData<O>);
+
+impl<O, T: Analyzer, F: Fn(T::Output) -> O> Map<O, T, F> {
+    fn new(f: F, x: T) -> Self {
+        Map(f, x, PhantomData)
+    }
+}
+
+impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
+    type Input = T::Input;
+    type Output = O;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        Some(self.0(self.1.analyze(st)?))
     }
 }
