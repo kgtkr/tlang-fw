@@ -1,9 +1,15 @@
+use crate::analyzer;
+use crate::analyzer::Analyzer;
 use crate::token::Token;
 
 struct Lexer {
     pos: usize,
     data: Vec<char>,
     tokens: Vec<Token>,
+}
+
+pub fn string(s: String) -> impl Analyzer<Input = char, Output = String> {
+    analyzer::tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
 impl Lexer {
