@@ -94,6 +94,13 @@ pub trait Analyzer {
     {
         Loop::new(self, Some(n), Some(n))
     }
+
+    fn msg(self, msg: String) -> Msg<Self>
+    where
+        Self: Sized,
+    {
+        Msg::new(self, msg)
+    }
 }
 
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
@@ -401,5 +408,24 @@ impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
         } else {
             Err(AnalyzerError::new(format!("{:?}", x), "???".to_string()))
         }
+    }
+}
+
+pub struct Msg<A: Analyzer>(A, String);
+
+impl<A: Analyzer> Msg<A> {
+    pub fn new(a: A, msg: String) -> Self {
+        Msg(a, msg)
+    }
+}
+
+impl<A: Analyzer> Analyzer for Msg<A> {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        self.0.analyze(st).map_err(|mut e| {
+            e.expecting = self.1.clone();
+            e
+        })
     }
 }
