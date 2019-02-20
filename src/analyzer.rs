@@ -107,7 +107,7 @@ pub fn anyOne<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
 
-pub fn eof<T: Analyzer>() -> Eof<T> {
+pub fn eof<T: Clone + Debug>() -> Eof<T> {
     Eof::new()
 }
 
@@ -306,25 +306,22 @@ impl<A: Analyzer> Analyzer for Loop<A> {
     }
 }
 
-pub struct Eof<A: Analyzer>(PhantomData<A>);
+pub struct Eof<T: Clone + Debug>(PhantomData<T>);
 
-impl<A: Analyzer> Eof<A> {
+impl<T: Clone + Debug> Eof<T> {
     pub fn new() -> Self {
         Eof(PhantomData)
     }
 }
 
-impl<A: Analyzer> Analyzer for Eof<A> {
-    type Input = A::Input;
+impl<T: Clone + Debug> Analyzer for Eof<T> {
+    type Input = T;
     type Output = ();
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
-        if st.eof() {
-            Ok(())
+        if let Some(x) = st.peak() {
+            Err(AnalyzerError::new(format!("{:?}", x), "eof".to_string()))
         } else {
-            Err(AnalyzerError::new(
-                "anyToken".to_string(), //TODO:peakしてtoStringする
-                "eof".to_string(),
-            ))
+            Ok(())
         }
     }
 }
