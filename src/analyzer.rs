@@ -91,6 +91,10 @@ pub fn tokens<T: Clone + Eq>(x: Vec<T>) -> Tokens<T> {
     Tokens::new(x)
 }
 
+pub fn expect<T: Clone, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
+    Expect::new(f)
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -332,5 +336,28 @@ impl<T: Clone + Eq> Analyzer for Tokens<T> {
             }
         }
         Some(res)
+    }
+}
+
+pub struct Expect<T: Clone, F: Fn(&T) -> bool>(F, PhantomData<T>);
+
+impl<T: Clone, F: Fn(&T) -> bool> Expect<T, F> {
+    pub fn new(f: F) -> Self {
+        Expect(f, PhantomData)
+    }
+}
+
+impl<T: Clone, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
+    type Input = T;
+    type Output = T;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        let x = st.peak()?;
+
+        if self.0(&x) {
+            st.next();
+            Some(x)
+        } else {
+            None
+        }
     }
 }
