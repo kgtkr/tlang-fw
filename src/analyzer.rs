@@ -138,6 +138,7 @@ pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f)
 }
 
+#[derive(Clone, Debug)]
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -160,6 +161,7 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Attempt<T: Analyzer>(T);
 
 impl<T: Analyzer> Attempt<T> {
@@ -181,6 +183,7 @@ impl<T: Analyzer> Analyzer for Attempt<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Map<O, T: Analyzer, F: Fn(T::Output) -> O>(F, T, PhantomData<O>);
 
 impl<O, T: Analyzer, F: Fn(T::Output) -> O> Map<O, T, F> {
@@ -197,6 +200,7 @@ impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Val<T: Clone, A: Analyzer>(T, PhantomData<A>);
 
 impl<T: Clone, A: Analyzer> Val<T, A> {
@@ -213,6 +217,7 @@ impl<T: Clone, A: Analyzer> Analyzer for Val<T, A> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Or<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>>(A, B);
 
 impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Or<A, B> {
@@ -232,6 +237,7 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer fo
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct And<A: Analyzer, B: Analyzer<Input = A::Input>>(A, B);
 
 impl<A: Analyzer, B: Analyzer<Input = A::Input>> And<A, B> {
@@ -248,6 +254,7 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for And<A, B> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct With<A: Analyzer, B: Analyzer<Input = A::Input>>(A, B);
 
 impl<A: Analyzer, B: Analyzer<Input = A::Input>> With<A, B> {
@@ -265,6 +272,7 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for With<A, B> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Optional<A: Analyzer>(A);
 
 impl<A: Analyzer> Optional<A> {
@@ -281,6 +289,7 @@ impl<A: Analyzer> Analyzer for Optional<A> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Loop<A: Analyzer>(A, Option<usize>, Option<usize>);
 
 impl<A: Analyzer> Loop<A> {
@@ -318,6 +327,7 @@ impl<A: Analyzer> Analyzer for Loop<A> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Eof<T: Clone + Debug>(PhantomData<T>);
 
 impl<T: Clone + Debug> Eof<T> {
@@ -342,6 +352,7 @@ impl<T: Clone + Debug> Analyzer for Eof<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Token<T: Clone + Eq + Debug>(T);
 
 impl<T: Clone + Eq + Debug> Token<T> {
@@ -372,6 +383,7 @@ impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Tokens<T: Clone + Eq + Debug>(Vec<T>);
 
 impl<T: Clone + Eq + Debug> Tokens<T> {
@@ -407,6 +419,7 @@ impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Expect<T: Clone + Debug, F: Fn(&T) -> bool>(F, PhantomData<T>);
 
 impl<T: Clone + Debug, F: Fn(&T) -> bool> Expect<T, F> {
@@ -438,6 +451,7 @@ impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Msg<A: Analyzer>(A, String);
 
 impl<A: Analyzer> Msg<A> {
