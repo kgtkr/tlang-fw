@@ -87,6 +87,10 @@ pub fn token<T: Clone + Eq>(x: T) -> Token<T> {
     Token::new(x)
 }
 
+pub fn tokens<T: Clone + Eq>(x: Vec<T>) -> Tokens<T> {
+    Tokens::new(x)
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -301,5 +305,32 @@ impl<T: Clone + Eq> Analyzer for Token<T> {
         } else {
             None
         }
+    }
+}
+
+pub struct Tokens<T: Clone + Eq>(Vec<T>);
+
+impl<T: Clone + Eq> Tokens<T> {
+    pub fn new(x: Vec<T>) -> Self {
+        Tokens(x)
+    }
+}
+
+impl<T: Clone + Eq> Analyzer for Tokens<T> {
+    type Input = T;
+    type Output = Vec<T>;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        let mut res = Vec::new();
+
+        for x in self.0.iter() {
+            let y = st.peak()?;
+            if x.clone() == y {
+                st.next();
+                res.push(y);
+            } else {
+                return None;
+            }
+        }
+        Some(res)
     }
 }
