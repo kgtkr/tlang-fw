@@ -16,6 +16,16 @@ impl AnalyzerError {
     }
 }
 
+impl Debug for AnalyzerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "unexpected {} expecting {}",
+            self.unexpected, self.expecting
+        )
+    }
+}
+
 pub type AnalyzerResult<T> = Result<T, AnalyzerError>;
 
 pub trait Analyzer {
