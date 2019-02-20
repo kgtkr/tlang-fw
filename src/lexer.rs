@@ -1,6 +1,15 @@
 use crate::analyzer;
-use crate::analyzer::Analyzer;
+use crate::analyzer::{token, tokens, Analyzer};
 use crate::token::Token;
+
+macro_rules! or {
+  ($x:expr) => {
+    $x
+  };
+  ($x:expr, $($xs:tt)+) => {
+    $x.or(or!($($xs)+))
+  };
+}
 
 struct Lexer {
     pos: usize,
@@ -9,7 +18,12 @@ struct Lexer {
 }
 
 pub fn string(s: String) -> impl Analyzer<Input = char, Output = String> {
-    analyzer::tokens(s.chars().collect()).map(|x| x.into_iter().collect())
+    tokens(s.chars().collect()).map(|x| x.into_iter().collect())
+}
+
+fn f() {
+    or!(token(' '), token('\n'), token('\t'));
+    //expect(|x| x == ' ' || x == '\n' || x == '\t');
 }
 
 impl Lexer {
