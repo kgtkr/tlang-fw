@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct Stream<T>(Vec<T>, usize);
 
 impl<T: Clone> Stream<T> {
