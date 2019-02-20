@@ -1,7 +1,10 @@
 use crate::stream::Stream;
+use std::error;
+use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct AnalyzerError {
     pos: usize,
     unexpected: String,
@@ -18,13 +21,19 @@ impl AnalyzerError {
     }
 }
 
-impl Debug for AnalyzerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl fmt::Display for AnalyzerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "unexpected {} expecting {}",
             self.unexpected, self.expecting
         )
+    }
+}
+
+impl error::Error for AnalyzerError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
     }
 }
 
