@@ -102,7 +102,7 @@ pub fn tokens<T: Clone + Eq + Debug>(x: Vec<T>) -> Tokens<T> {
     Tokens::new(x)
 }
 
-pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F, expect: String) -> Expect<T, F> {
+pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f, expect)
 }
 
@@ -367,11 +367,11 @@ impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
     }
 }
 
-pub struct Expect<T: Clone + Debug, F: Fn(&T) -> bool>(F, String, PhantomData<T>);
+pub struct Expect<T: Clone + Debug, F: Fn(&T) -> bool>(F, PhantomData<T>);
 
 impl<T: Clone + Debug, F: Fn(&T) -> bool> Expect<T, F> {
-    pub fn new(f: F, expect: String) -> Self {
-        Expect(f, expect, PhantomData)
+    pub fn new(f: F) -> Self {
+        Expect(f, PhantomData)
     }
 }
 
@@ -379,18 +379,17 @@ impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
-        let x = st.peak().ok_or(AnalyzerError::new(format!(
-            "unexpected eof expecting {}",
-            self.1
-        )))?;
+        let x = st
+            .peak()
+            .ok_or(AnalyzerError::new(format!("unexpected eof expecting ???")))?;
 
         if self.0(&x) {
             st.next();
             Ok(x)
         } else {
             Err(AnalyzerError::new(format!(
-                "unexpected {:?} expecting {}",
-                x, self.1
+                "unexpected {:?} expecting ???",
+                x
             )))
         }
     }
