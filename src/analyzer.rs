@@ -1,10 +1,23 @@
 use crate::stream::Stream;
+use std::fmt::Debug;
 use std::marker::PhantomData;
+
+pub struct AnalyzerError {
+    msg: String,
+}
+
+impl AnalyzerError {
+    pub fn new(msg: String) -> AnalyzerError {
+        AnalyzerError { msg }
+    }
+}
+
+pub type AnalyzerResult<T> = Result<T, AnalyzerError>;
 
 pub trait Analyzer {
     type Input;
     type Output;
-    fn analyze(&self, stream: &mut Stream<Self::Input>) -> Option<Self::Output>;
+    fn analyze(&self, stream: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output>;
     fn map<T, F: Fn(Self::Output) -> T>(self, f: F) -> Map<T, Self, F>
     where
         Self: Sized,
@@ -81,16 +94,16 @@ pub fn val<T: Clone, A: Analyzer>(x: T) -> Val<T, A> {
     Val::new(x)
 }
 
-pub fn token<T: Clone + Eq>(x: T) -> Token<T> {
+pub fn token<T: Clone + Eq + Debug>(x: T) -> Token<T> {
     Token::new(x)
 }
 
-pub fn tokens<T: Clone + Eq>(x: Vec<T>) -> Tokens<T> {
+pub fn tokens<T: Clone + Eq + Debug>(x: Vec<T>) -> Tokens<T> {
     Tokens::new(x)
 }
 
-pub fn expect<T: Clone, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
-    Expect::new(f)
+pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F, expect: String) -> Expect<T, F> {
+    Expect::new(f, expect)
 }
 
 pub struct AnyOne<T: Clone>(PhantomData<T>);
@@ -104,10 +117,12 @@ impl<T: Clone> AnyOne<T> {
 impl<T: Clone> Analyzer for AnyOne<T> {
     type Input = T;
     type Output = T;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        let val = st.peak()?;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        let val = st.peak().ok_or(AnalyzerError::new(
+            "unexpected eof expecting anyToken".to_string(),
+        ))?;
         st.next();
-        Some(val)
+        Ok(val)
     }
 }
 
@@ -122,10 +137,10 @@ impl<T: Analyzer> Attempt<T> {
 impl<T: Analyzer> Analyzer for Attempt<T> {
     type Input = T::Input;
     type Output = T::Output;
-    fn analyze(&self, st: &mut Stream<T::Input>) -> Option<T::Output> {
+    fn analyze(&self, st: &mut Stream<T::Input>) -> AnalyzerResult<T::Output> {
         let pos = st.pos();
         let res = self.0.analyze(st);
-        if let None = res {
+        if let Err(_) = res {
             st.set_pos(pos);
         }
         res
@@ -143,8 +158,8 @@ impl<O, T: Analyzer, F: Fn(T::Output) -> O> Map<O, T, F> {
 impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
     type Input = T::Input;
     type Output = O;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        Some(self.0(self.1.analyze(st)?))
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        Ok(self.0(self.1.analyze(st)?))
     }
 }
 
@@ -159,8 +174,8 @@ impl<T: Clone, A: Analyzer> Val<T, A> {
 impl<T: Clone, A: Analyzer> Analyzer for Val<T, A> {
     type Input = A::Input;
     type Output = T;
-    fn analyze(&self, _: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        Some(self.0.clone())
+    fn analyze(&self, _: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        Ok(self.0.clone())
     }
 }
 
@@ -175,9 +190,9 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Or<A, B> {
 impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer for Or<A, B> {
     type Input = A::Input;
     type Output = B::Output;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         match self.0.analyze(st) {
-            None => self.1.analyze(st),
+            Err(_) => self.1.analyze(st),
             x => x,
         }
     }
@@ -194,8 +209,8 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> And<A, B> {
 impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for And<A, B> {
     type Input = A::Input;
     type Output = (A::Output, B::Output);
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        Some((self.0.analyze(st)?, self.1.analyze(st)?))
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        Ok((self.0.analyze(st)?, self.1.analyze(st)?))
     }
 }
 
@@ -210,7 +225,7 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> With<A, B> {
 impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for With<A, B> {
     type Input = A::Input;
     type Output = B::Output;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         self.0.analyze(st)?;
         self.1.analyze(st)
     }
@@ -227,8 +242,8 @@ impl<A: Analyzer> Optional<A> {
 impl<A: Analyzer> Analyzer for Optional<A> {
     type Input = A::Input;
     type Output = Option<A::Output>;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        Some(self.0.analyze(st))
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        Ok(self.0.analyze(st).ok())
     }
 }
 
@@ -243,7 +258,7 @@ impl<A: Analyzer> Loop<A> {
 impl<A: Analyzer> Analyzer for Loop<A> {
     type Input = A::Input;
     type Output = Vec<A::Output>;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         let mut res = Vec::new();
         for i in 0.. {
             if let Some(max) = self.2 {
@@ -253,18 +268,19 @@ impl<A: Analyzer> Analyzer for Loop<A> {
             }
 
             match self.0.analyze(st) {
-                Some(x) => res.push(x),
-                None => break,
+                Ok(x) => res.push(x),
+                Err(e) => {
+                    if let Some(min) = self.1 {
+                        if res.len() < min {
+                            return Err(e);
+                        }
+                    }
+                    break;
+                }
             }
         }
 
-        if let Some(min) = self.1 {
-            if res.len() < min {
-                return None;
-            }
-        }
-
-        Some(res)
+        Ok(res)
     }
 }
 
@@ -279,83 +295,103 @@ impl<A: Analyzer> Eof<A> {
 impl<A: Analyzer> Analyzer for Eof<A> {
     type Input = A::Input;
     type Output = ();
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         if st.eof() {
-            Some(())
+            Ok(())
         } else {
-            None
+            Err(AnalyzerError::new(
+                "unexpected anyToken expecting eof".to_string(),
+            ))
         }
     }
 }
 
-pub struct Token<T: Clone + Eq>(T);
+pub struct Token<T: Clone + Eq + Debug>(T);
 
-impl<T: Clone + Eq> Token<T> {
+impl<T: Clone + Eq + Debug> Token<T> {
     pub fn new(x: T) -> Self {
         Token(x)
     }
 }
 
-impl<T: Clone + Eq> Analyzer for Token<T> {
+impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
     type Input = T;
     type Output = T;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        let res = st.peak()?;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        let res = st.peak().ok_or(AnalyzerError::new(format!(
+            "unexpected eof expecting {:?}",
+            self.0
+        )))?;
         if res == self.0 {
             st.next();
-            Some(res)
+            Ok(res)
         } else {
-            None
+            Err(AnalyzerError::new(format!(
+                "unexpected {:?} expecting {:?}",
+                res, self.0
+            )))
         }
     }
 }
 
-pub struct Tokens<T: Clone + Eq>(Vec<T>);
+pub struct Tokens<T: Clone + Eq + Debug>(Vec<T>);
 
-impl<T: Clone + Eq> Tokens<T> {
+impl<T: Clone + Eq + Debug> Tokens<T> {
     pub fn new(x: Vec<T>) -> Self {
         Tokens(x)
     }
 }
 
-impl<T: Clone + Eq> Analyzer for Tokens<T> {
+impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
     type Input = T;
     type Output = Vec<T>;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         let mut res = Vec::new();
 
         for x in self.0.iter() {
-            let y = st.peak()?;
+            let y = st.peak().ok_or(AnalyzerError::new(format!(
+                "unexpected eof expecting {:?}",
+                x
+            )))?;
             if x.clone() == y {
                 st.next();
                 res.push(y);
             } else {
-                return None;
+                return Err(AnalyzerError::new(format!(
+                    "unexpected {:?} expecting {:?}",
+                    y, x
+                )));
             }
         }
-        Some(res)
+        Ok(res)
     }
 }
 
-pub struct Expect<T: Clone, F: Fn(&T) -> bool>(F, PhantomData<T>);
+pub struct Expect<T: Clone + Debug, F: Fn(&T) -> bool>(F, String, PhantomData<T>);
 
-impl<T: Clone, F: Fn(&T) -> bool> Expect<T, F> {
-    pub fn new(f: F) -> Self {
-        Expect(f, PhantomData)
+impl<T: Clone + Debug, F: Fn(&T) -> bool> Expect<T, F> {
+    pub fn new(f: F, expect: String) -> Self {
+        Expect(f, expect, PhantomData)
     }
 }
 
-impl<T: Clone, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
+impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     type Input = T;
     type Output = T;
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
-        let x = st.peak()?;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        let x = st.peak().ok_or(AnalyzerError::new(format!(
+            "unexpected eof expecting {}",
+            self.1
+        )))?;
 
         if self.0(&x) {
             st.next();
-            Some(x)
+            Ok(x)
         } else {
-            None
+            Err(AnalyzerError::new(format!(
+                "unexpected {:?} expecting {}",
+                x, self.1
+            )))
         }
     }
 }
