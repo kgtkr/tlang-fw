@@ -3,13 +3,15 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub struct AnalyzerError {
+    pos: usize,
     unexpected: String,
     expecting: String,
 }
 
 impl AnalyzerError {
-    pub fn new(unexpected: String, expecting: String) -> AnalyzerError {
+    pub fn new(pos: usize, unexpected: String, expecting: String) -> AnalyzerError {
         AnalyzerError {
+            pos,
             unexpected,
             expecting,
         }
@@ -140,6 +142,7 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         let val = st.peak().ok_or(AnalyzerError::new(
+            st.pos(),
             "eof".to_string(),
             "anyToken".to_string(),
         ))?;
@@ -319,7 +322,11 @@ impl<T: Clone + Debug> Analyzer for Eof<T> {
     type Output = ();
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         if let Some(x) = st.peak() {
-            Err(AnalyzerError::new(format!("{:?}", x), "eof".to_string()))
+            Err(AnalyzerError::new(
+                st.pos(),
+                format!("{:?}", x),
+                "eof".to_string(),
+            ))
         } else {
             Ok(())
         }
@@ -339,6 +346,7 @@ impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         let res = st.peak().ok_or(AnalyzerError::new(
+            st.pos(),
             "eof".to_string(),
             format!("{:?}", self.0),
         ))?;
@@ -347,6 +355,7 @@ impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
             Ok(res)
         } else {
             Err(AnalyzerError::new(
+                st.pos(),
                 format!("{:?}", res),
                 format!("{:?}", self.0),
             ))
@@ -369,14 +378,20 @@ impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
         let mut res = Vec::new();
 
         for x in self.0.iter() {
-            let y = st
-                .peak()
-                .ok_or(AnalyzerError::new("eof".to_string(), format!("{:?}", x)))?;
+            let y = st.peak().ok_or(AnalyzerError::new(
+                st.pos(),
+                "eof".to_string(),
+                format!("{:?}", x),
+            ))?;
             if x.clone() == y {
                 st.next();
                 res.push(y);
             } else {
-                return Err(AnalyzerError::new(format!("{:?}", y), format!("{:?}", x)));
+                return Err(AnalyzerError::new(
+                    st.pos(),
+                    format!("{:?}", y),
+                    format!("{:?}", x),
+                ));
             }
         }
         Ok(res)
@@ -395,15 +410,21 @@ impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
-        let x = st
-            .peak()
-            .ok_or(AnalyzerError::new("eof".to_string(), "???".to_string()))?;
+        let x = st.peak().ok_or(AnalyzerError::new(
+            st.pos(),
+            "eof".to_string(),
+            "???".to_string(),
+        ))?;
 
         if self.0(&x) {
             st.next();
             Ok(x)
         } else {
-            Err(AnalyzerError::new(format!("{:?}", x), "???".to_string()))
+            Err(AnalyzerError::new(
+                st.pos(),
+                format!("{:?}", x),
+                "???".to_string(),
+            ))
         }
     }
 }
