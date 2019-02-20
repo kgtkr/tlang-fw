@@ -83,6 +83,10 @@ pub fn val<T: Clone, A: Analyzer>(x: T) -> Val<T, A> {
     Val::new(x)
 }
 
+pub fn token<T: Clone + Eq>(x: T) -> Token<T> {
+    Token::new(x)
+}
+
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
 impl<T: Clone> AnyOne<T> {
@@ -96,7 +100,7 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         let val = st.peak()?;
-        st.add_pos(1);
+        st.next();
         Some(val)
     }
 }
@@ -272,6 +276,28 @@ impl<A: Analyzer> Analyzer for Eof<A> {
     fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
         if st.eof() {
             Some(())
+        } else {
+            None
+        }
+    }
+}
+
+pub struct Token<T: Clone + Eq>(T);
+
+impl<T: Clone + Eq> Token<T> {
+    pub fn new(x: T) -> Self {
+        Token(x)
+    }
+}
+
+impl<T: Clone + Eq> Analyzer for Token<T> {
+    type Input = T;
+    type Output = T;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> Option<Self::Output> {
+        let res = st.peak()?;
+        if res == self.0 {
+            st.next();
+            Some(res)
         } else {
             None
         }

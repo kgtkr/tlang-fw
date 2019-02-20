@@ -24,6 +24,10 @@ impl<T> Stream<T> {
         self.set_pos(self.pos() + x)
     }
 
+    pub fn next(&mut self) -> Option<()> {
+        self.add_pos(1)
+    }
+
     pub fn eof(&self) -> bool {
         self.0.len() <= self.1
     }
