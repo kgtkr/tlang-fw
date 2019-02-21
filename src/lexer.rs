@@ -1,15 +1,6 @@
 use crate::analyzer;
-use crate::analyzer::{token, tokens, Analyzer};
+use crate::analyzer::{eof, expect, token, tokens, val, Analyzer};
 use crate::token::Token;
-
-macro_rules! or {
-  ($x:expr) => {
-    $x
-  };
-  ($x:expr, $($xs:tt)+) => {
-    $x.or(or!($($xs)+))
-  };
-}
 
 struct Lexer {
     pos: usize,
@@ -17,13 +8,19 @@ struct Lexer {
     tokens: Vec<Token>,
 }
 
-pub fn string(s: String) -> impl Analyzer<Input = char, Output = String> {
+pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
 fn f() {
-    or!(token(' '), token('\n'), token('\t'));
-    //expect(|x| x == ' ' || x == '\n' || x == '\t');
+    let spaces = analyzer::or!(token(' '), token('\n'), token('\t')).many();
+    let line_comment = string("//")
+        .with(token('\n').not().many())
+        .with(token('\n').optional())
+        .with(val(()));
+    let block_comment = string("/*")
+        .with(string("*/").not().attempt().many())
+        .with(eof().or(string("*/").with(val(()))));
 }
 
 impl Lexer {

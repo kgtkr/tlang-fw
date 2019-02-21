@@ -1,8 +1,1 @@
-mod analyzer;
-mod lexer;
-mod stream;
-mod token;
-
-fn main() {
-    println!("Hello, world!");
-}
+fn main() {}
