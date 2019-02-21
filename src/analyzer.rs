@@ -155,7 +155,7 @@ pub fn eof<T: Clone + Debug>() -> Eof<T> {
     Eof::new()
 }
 
-pub fn val<T: Clone, A: Analyzer>(x: T) -> Val<T, A> {
+pub fn val<T: Clone, I>(x: T) -> Val<T, I> {
     Val::new(x)
 }
 
@@ -234,16 +234,16 @@ impl<O, T: Analyzer, F: Fn(T::Output) -> O> Analyzer for Map<O, T, F> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Val<T: Clone, A: Analyzer>(T, PhantomData<A>);
+pub struct Val<T: Clone, I>(T, PhantomData<I>);
 
-impl<T: Clone, A: Analyzer> Val<T, A> {
+impl<T: Clone, I> Val<T, I> {
     pub fn new(x: T) -> Self {
         Val(x, PhantomData)
     }
 }
 
-impl<T: Clone, A: Analyzer> Analyzer for Val<T, A> {
-    type Input = A::Input;
+impl<T: Clone, I> Analyzer for Val<T, I> {
+    type Input = I;
     type Output = T;
     fn analyze(&self, _: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         Ok(self.0.clone())
