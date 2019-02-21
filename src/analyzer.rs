@@ -202,7 +202,9 @@ pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f)
 }
 
-pub fn analyzer_func<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B>(f: F) -> Parser<F, A, B> {
+pub fn analyzer_func<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B>(
+    f: F,
+) -> AnalyzerFunc<F, A, B> {
     AnalyzerFunc::new(f)
 }
 
