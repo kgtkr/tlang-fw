@@ -128,6 +128,16 @@ pub trait Analyzer {
     {
         Not::new(self)
     }
+
+    fn then<F: Fn(Self::Output) -> B, B: Analyzer<Input = Self::Input>>(
+        self,
+        f: F,
+    ) -> Then<Self, F, B>
+    where
+        Self: Sized,
+    {
+        Then::new(self, f)
+    }
 }
 
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
@@ -508,6 +518,30 @@ impl<A: Analyzer> Analyzer for Not<A> {
                 "???".to_string(),
             )),
             Err(_) => Ok(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Then<A: Analyzer, F: Fn(A::Output) -> B, B: Analyzer<Input = A::Input>>(
+    A,
+    F,
+    PhantomData<B>,
+);
+
+impl<A: Analyzer, F: Fn(A::Output) -> B, B: Analyzer<Input = A::Input>> Then<A, F, B> {
+    pub fn new(a: A, f: F) -> Self {
+        Then(a, f, PhantomData)
+    }
+}
+
+impl<A: Analyzer, F: Fn(A::Output) -> B, B: Analyzer<Input = A::Input>> Analyzer for Then<A, F, B> {
+    type Input = A::Input;
+    type Output = B::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        match self.0.analyze(st) {
+            Ok(x) => self.1(x).analyze(st),
+            Err(e) => Err(e),
         }
     }
 }
