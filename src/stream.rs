@@ -5,6 +5,10 @@ impl<T: Clone> Stream<T> {
     pub fn peak(&self) -> Option<T> {
         self.0.get(self.1).cloned()
     }
+
+    pub fn peak_index(&self, i: usize) -> Option<T> {
+        self.0.get(self.1 + i).cloned()
+    }
 }
 
 impl<T> Stream<T> {
