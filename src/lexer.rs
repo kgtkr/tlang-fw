@@ -90,6 +90,20 @@ pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
     })
 }
 
+pub fn char_literal() -> impl Analyzer<Input = char, Output = char> {
+    token('\'').with(literal_char('\'')).skip(token('\''))
+}
+
+pub fn string_literal() -> impl Analyzer<Input = char, Output = String> {
+    token('\"')
+        .with(
+            literal_char('\"')
+                .many()
+                .map(|x| x.into_iter().collect::<String>()),
+        )
+        .skip(token('\"'))
+}
+
 pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
     analyzer_func(|st| {
         let s = ident_str().analyze(st)?;
