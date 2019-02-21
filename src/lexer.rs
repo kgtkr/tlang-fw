@@ -1,5 +1,7 @@
 use crate::analyzer;
-use crate::analyzer::{eof, expect, token, tokens, val, Analyzer};
+use crate::analyzer::{
+    analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerResult,
+};
 use crate::stream::Stream;
 use crate::token::Token;
 
@@ -13,127 +15,40 @@ pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
-fn f() {
-    let spaces = analyzer::or!(token(' '), token('\n'), token('\t')).many();
+fn skip() -> impl Analyzer<Input = char, Output = ()> {
+    let spaces = analyzer::or!(token(' '), token('\n'), token('\t'))
+        .many()
+        .with(val(()));
     let line_comment = string("//")
-        .with(token('\n').not().many())
+        .with(expect(|&x| x != '\n').many())
         .with(token('\n').optional())
         .with(val(()));
-    let block_comment = string("/*")
-        .with(string("*/").not().attempt().many())
-        .with(eof().or(string("*/").with(val(()))));
+    fn block_comment_f(st: &mut Stream<char>) -> AnalyzerResult<()> {
+        string("/*")
+            .with(
+                analyzer_func(|st| match (st.peak(), st.peak_index(1)) {
+                    (Some('/'), Some('*')) => block_comment_f(st),
+                    (Some('*'), Some('/')) => fail().analyze(st),
+                    _ => anyOne().with(val(())).analyze(st),
+                })
+                .many(),
+            )
+            .with(string("*/"))
+            .with(val(()))
+            .analyze(st)
+    }
+    let block_comment = analyzer_func(block_comment_f);
+
+    let comment = line_comment.attempt().or(block_comment);
+
+    spaces.or(comment).many().with(val(()))
 }
 
-impl Lexer {
-    fn new(s: String) -> Lexer {
-        Lexer {
-            pos: 0,
-            data: s.chars().collect(),
-            tokens: Vec::new(),
-        }
-    }
-
-    fn peek(&self) -> Option<char> {
-        self.data.get(self.pos).cloned()
-    }
-
-    fn peek_index(&self, i: usize) -> Option<char> {
-        self.data.get(self.pos + i).cloned()
-    }
-
-    fn next(&mut self) -> Option<char> {
-        let val = self.peek()?;
-        self.pos += 1;
-        Some(val)
-    }
-
-    fn expect(&mut self, f: impl FnOnce(char) -> bool) -> Option<char> {
-        match self.peek() {
-            Some(x) if f(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    fn expect_next(&mut self, f: impl FnOnce(char) -> bool) -> Option<char> {
-        let x = self.expect(f)?;
-        self.next();
-        Some(x)
-    }
-
-    fn spaces(&mut self) {
-        while let Some(_) = self.expect(|x| x == ' ' || x == '\n' || x == '\t') {}
-    }
-
-    fn line_comment(&mut self) -> Option<()> {
-        match (self.peek_index(0), self.peek_index(1)) {
-            (Some('/'), Some('/')) => {
-                while let Some(c) = self.peek() {
-                    self.next();
-                    if c == '\n' {
-                        break;
-                    }
-                }
-                Some(())
-            }
-            _ => None,
-        }
-    }
-
-    // TODO:ネストされたブロックコメント
-    fn block_comment(&mut self) -> Option<()> {
-        match (self.peek_index(0), self.peek_index(1)) {
-            (Some('/'), Some('*')) => {
-                while let Some(c) = self.peek() {
-                    self.next();
-                    if c == '*' && self.peek() == Some('/') {
-                        self.next();
-                        break;
-                    }
-                }
-                Some(())
-            }
-            _ => None,
-        }
-    }
-
-    fn comment(&mut self) -> Option<()> {
-        match self.line_comment() {
-            None => self.block_comment(),
-            x => x,
-        }
-    }
-
-    fn skip(&mut self) {
-        self.spaces();
-        while let Some(_) = self.comment() {
-            self.spaces();
-        }
-    }
-
-    fn string(&mut self, s: String) -> Option<()> {
-        for (i, c) in s.chars().enumerate() {
-            if self.peek_index(i) != Some(c) {
-                return None;
-            }
-        }
-
-        for _ in 0..s.len() {
-            self.next();
-        }
-        Some(())
-    }
-
-    fn ident_char(&mut self) -> Option<char> {
-        let c = self.peek()?;
-        if c.is_ascii_alphanumeric() || c == '_' {
-            self.next();
-            Some(c)
-        } else {
-            None
-        }
-    }
-
-    fn next_token(&mut self) -> Option<Token> {
-        unimplemented!();
-    }
+fn ident() -> impl Analyzer<Input = char, Output = String> {
+    expect::<char, _>(|&c| c.is_ascii_alphabetic())
+        .and(expect::<char, _>(|&c| c.is_ascii_alphanumeric() || c == '_').many())
+        .map(|(x, mut xs)| {
+            xs.insert(0, x);
+            xs.into_iter().collect::<String>()
+        })
 }
