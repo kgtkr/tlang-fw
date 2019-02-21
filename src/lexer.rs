@@ -5,17 +5,11 @@ use crate::analyzer::{
 use crate::stream::Stream;
 use crate::token::Token;
 
-struct Lexer {
-    pos: usize,
-    data: Vec<char>,
-    tokens: Vec<Token>,
-}
-
 pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
-fn skip() -> impl Analyzer<Input = char, Output = ()> {
+pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
     let spaces = analyzer::or!(token(' '), token('\n'), token('\t'))
         .many()
         .with(val(()));
@@ -44,7 +38,7 @@ fn skip() -> impl Analyzer<Input = char, Output = ()> {
     spaces.or(comment).many().with(val(()))
 }
 
-fn ident() -> impl Analyzer<Input = char, Output = String> {
+pub fn ident() -> impl Analyzer<Input = char, Output = String> {
     expect::<char, _>(|&c| c.is_ascii_alphabetic())
         .and(expect::<char, _>(|&c| c.is_ascii_alphanumeric() || c == '_').many())
         .map(|(x, mut xs)| {
