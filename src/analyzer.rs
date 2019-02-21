@@ -147,6 +147,30 @@ pub trait Analyzer {
     }
 }
 
+impl<A: Analyzer> Analyzer for Box<A> {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        (**self).analyze(st)
+    }
+}
+
+impl<A: Analyzer> Analyzer for &A {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        (**self).analyze(st)
+    }
+}
+
+impl<A: Analyzer> Analyzer for &mut A {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        (**self).analyze(st)
+    }
+}
+
 pub fn anyOne<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
