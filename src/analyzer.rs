@@ -4,6 +4,15 @@ use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+pub macro or {
+  ($x:expr) => {
+    $x
+  },
+  ($x:expr, $($xs:tt)+) => {
+    $x.or(or!($($xs)+))
+  }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnalyzerError {
     pos: usize,
@@ -111,6 +120,13 @@ pub trait Analyzer {
         Self: Sized,
     {
         Msg::new(self, msg)
+    }
+
+    fn not(self) -> Not<Self>
+    where
+        Self: Sized,
+    {
+        Not::new(self)
     }
 }
 
@@ -468,5 +484,30 @@ impl<A: Analyzer> Analyzer for Msg<A> {
             e.expecting = self.1.clone();
             e
         })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Not<A: Analyzer>(A);
+
+impl<A: Analyzer> Not<A> {
+    pub fn new(a: A) -> Self {
+        Not(a)
+    }
+}
+
+impl<A: Analyzer> Analyzer for Not<A> {
+    type Input = A::Input;
+    type Output = ();
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        let pos = st.pos();
+        match self.0.analyze(st) {
+            Ok(_) => Err(AnalyzerError::new(
+                pos,
+                "???".to_string(),
+                "???".to_string(),
+            )),
+            Err(_) => Ok(()),
+        }
     }
 }
