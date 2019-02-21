@@ -6,7 +6,7 @@ pub struct Token {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Kind {
+pub enum Kind {
     Keyword(Keyword),
     Ident(String),
     Literal(Literal),
@@ -14,7 +14,7 @@ enum Kind {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Literal {
+pub enum Literal {
     Char(char),
     String(String),
     I32(i32),
@@ -24,7 +24,7 @@ enum Literal {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Keyword {
+pub enum Keyword {
     I32,
     I64,
     F32,
@@ -45,7 +45,7 @@ enum Keyword {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Symbol {
+pub enum Symbol {
     Dot,
     Comma,
     Colon,
