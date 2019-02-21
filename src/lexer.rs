@@ -1,6 +1,7 @@
 use crate::analyzer;
 use crate::analyzer::{
-    analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerResult,
+    analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
+    AnalyzerResult, Either,
 };
 use crate::stream::Stream;
 use crate::token::{Keyword, Kind, Symbol, Token};
@@ -45,6 +46,48 @@ pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
             xs.insert(0, x);
             xs.into_iter().collect::<String>()
         })
+}
+
+pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
+    expect::<char, _>(|&x| x.is_ascii_digit() || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'F'))
+        .map(|x| x.to_ascii_lowercase())
+        .many_n(len)
+        .map(|x| {
+            u32::from_str_radix(&x.into_iter().collect::<String>(), 16)
+                .map(|x| std::char::from_u32(x))
+                .unwrap()
+        })
+        .then(|x| match x {
+            Some(x) => Either::Right(val(x)),
+            None => Either::Left(fail()),
+        })
+}
+
+pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
+    analyzer_func(move |st| {
+        let c = anyOne().analyze(st)?;
+        if c == '\\' {
+            let pos = st.pos();
+            let c = anyOne().analyze(st)?;
+            match c {
+                't' => Ok('\t'),
+                'n' => Ok('\n'),
+                'r' => Ok('\r'),
+                '\\' => Ok('\\'),
+                c if c == lit => Ok(c),
+                'x' => hex_char(2).analyze(st),
+                'u' => hex_char(4).analyze(st),
+                'U' => hex_char(8).analyze(st),
+                c => Err(AnalyzerError::new(
+                    pos,
+                    "t or n or r or \\ or x or u or U".to_string(),
+                    c.to_string(),
+                )),
+            }
+        } else {
+            Ok(c)
+        }
+    })
 }
 
 pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
