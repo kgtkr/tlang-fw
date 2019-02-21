@@ -208,6 +208,10 @@ pub fn analyzer_func<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B>(
     AnalyzerFunc::new(f)
 }
 
+pub fn fail<A, B>() -> Fail<A, B> {
+    Fail::new()
+}
+
 #[derive(Clone, Debug)]
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
@@ -623,5 +627,26 @@ impl<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B> Analyzer for AnalyzerFunc
     type Output = B;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         self.0(st)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Fail<A, B>(PhantomData<(A, B)>);
+
+impl<A, B> Fail<A, B> {
+    pub fn new() -> Self {
+        Fail(PhantomData)
+    }
+}
+
+impl<A, B> Analyzer for Fail<A, B> {
+    type Input = A;
+    type Output = B;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        Err(AnalyzerError::new(
+            st.pos(),
+            "???".to_string(),
+            "???".to_string(),
+        ))
     }
 }
