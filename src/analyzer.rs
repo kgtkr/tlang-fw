@@ -202,6 +202,10 @@ pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f)
 }
 
+pub fn analyzer_func<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B>(f: F) -> Parser<F, A, B> {
+    AnalyzerFunc::new(f)
+}
+
 #[derive(Clone, Debug)]
 pub struct AnyOne<T: Clone>(PhantomData<T>);
 
@@ -600,5 +604,22 @@ impl<A: Analyzer, F: Fn(A::Output) -> B, B: Analyzer<Input = A::Input>> Analyzer
             Ok(x) => self.1(x).analyze(st),
             Err(e) => Err(e),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AnalyzerFunc<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B>(F, PhantomData<(A, B)>);
+
+impl<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B> AnalyzerFunc<F, A, B> {
+    pub fn new(f: F) -> Self {
+        AnalyzerFunc(f, PhantomData)
+    }
+}
+
+impl<F: Fn(&mut Stream<A>) -> AnalyzerResult<B>, A, B> Analyzer for AnalyzerFunc<F, A, B> {
+    type Input = A;
+    type Output = B;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        self.0(st)
     }
 }
