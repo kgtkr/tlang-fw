@@ -145,6 +145,13 @@ pub trait Analyzer {
     {
         Then::new(self, f)
     }
+
+    fn boxed(self) -> Box<Self>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 impl<A: Analyzer> Analyzer for Box<A> {
