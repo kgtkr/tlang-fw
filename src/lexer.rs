@@ -3,7 +3,7 @@ use crate::analyzer::{
     analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerResult,
 };
 use crate::stream::Stream;
-use crate::token::{Symbol, Token};
+use crate::token::{Keyword, Kind, Symbol, Token};
 
 pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
@@ -38,13 +38,39 @@ pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
     spaces.or(comment).many().with(val(()))
 }
 
-pub fn ident() -> impl Analyzer<Input = char, Output = String> {
+pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
     expect::<char, _>(|&c| c.is_ascii_alphabetic())
         .and(expect::<char, _>(|&c| c.is_ascii_alphanumeric() || c == '_').many())
         .map(|(x, mut xs)| {
             xs.insert(0, x);
             xs.into_iter().collect::<String>()
         })
+}
+
+pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
+    analyzer_func(|st| {
+        let s = ident_str().analyze(st)?;
+        Ok(match s.as_ref() {
+            "i32" => Kind::Keyword(Keyword::I32),
+            "i64" => Kind::Keyword(Keyword::I64),
+            "F32" => Kind::Keyword(Keyword::F32),
+            "F64" => Kind::Keyword(Keyword::F64),
+            "string" => Kind::Keyword(Keyword::String),
+            "bool" => Kind::Keyword(Keyword::Bool),
+            "char" => Kind::Keyword(Keyword::Char),
+            "true" => Kind::Keyword(Keyword::True),
+            "false" => Kind::Keyword(Keyword::False),
+            "let" => Kind::Keyword(Keyword::Let),
+            "if" => Kind::Keyword(Keyword::If),
+            "while" => Kind::Keyword(Keyword::While),
+            "return" => Kind::Keyword(Keyword::Return),
+            "struct" => Kind::Keyword(Keyword::Struct),
+            "fun" => Kind::Keyword(Keyword::Fun),
+            "extern" => Kind::Keyword(Keyword::Extern),
+            "for" => Kind::Keyword(Keyword::For),
+            s => Kind::Ident(s.to_string()),
+        })
+    })
 }
 
 pub fn symbol() -> impl Analyzer<Input = char, Output = Symbol> {
