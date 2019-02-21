@@ -87,6 +87,13 @@ pub trait Analyzer {
         With::new(self, x)
     }
 
+    fn skip<T: Analyzer<Input = Self::Input>>(self, x: T) -> Skip<Self, T>
+    where
+        Self: Sized,
+    {
+        Skip::new(self, x)
+    }
+
     fn optional(self) -> Optional<Self>
     where
         Self: Sized,
@@ -295,6 +302,25 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for With<A, B> {
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
         self.0.analyze(st)?;
         self.1.analyze(st)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Skip<A: Analyzer, B: Analyzer<Input = A::Input>>(A, B);
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input>> Skip<A, B> {
+    pub fn new(a: A, b: B) -> Self {
+        Skip(a, b)
+    }
+}
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input>> Analyzer for Skip<A, B> {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        let res = self.0.analyze(st)?;
+        self.1.analyze(st)?;
+        Ok(res)
     }
 }
 
