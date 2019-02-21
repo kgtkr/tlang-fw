@@ -3,7 +3,7 @@ use crate::analyzer::{
     analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerResult,
 };
 use crate::stream::Stream;
-use crate::token::Token;
+use crate::token::{Symbol, Token};
 
 pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
@@ -45,4 +45,38 @@ pub fn ident() -> impl Analyzer<Input = char, Output = String> {
             xs.insert(0, x);
             xs.into_iter().collect::<String>()
         })
+}
+
+pub fn symbol() -> impl Analyzer<Input = char, Output = Symbol> {
+    analyzer::or!(
+        token('.').with(val(Symbol::Dot)),
+        token(',').with(val(Symbol::Comma)),
+        token(':').with(val(Symbol::Colon)),
+        token(';').with(val(Symbol::Semicolon)),
+        token('(').with(val(Symbol::OpenParent)),
+        token(')').with(val(Symbol::CloseParent)),
+        token('[').with(val(Symbol::OpenBracket)),
+        token(']').with(val(Symbol::CloseBracket)),
+        token('{').with(val(Symbol::OpenBrace)),
+        token('}').with(val(Symbol::CloseBrace)),
+        string("!=").with(val(Symbol::Ne)).attempt(),
+        token('!').with(val(Symbol::Not)),
+        token('+').with(val(Symbol::Add)),
+        token('-').with(val(Symbol::Sub)),
+        string("**").with(val(Symbol::Pow)).attempt(),
+        token('*').with(val(Symbol::Mul)),
+        token('/').with(val(Symbol::Div)),
+        token('%').with(val(Symbol::Mod)),
+        string("&&").with(val(Symbol::And)).attempt(),
+        token('&').with(val(Symbol::BitAnd)),
+        string("||").with(val(Symbol::Or)).attempt(),
+        token('|').with(val(Symbol::BitOr)),
+        token('^').with(val(Symbol::BitXor)),
+        string("<=").with(val(Symbol::Lte)).attempt(),
+        token('<').with(val(Symbol::Lt)),
+        string(">=").with(val(Symbol::Gte)).attempt(),
+        token('>').with(val(Symbol::Gt)),
+        string("==").with(val(Symbol::Eq)).attempt(),
+        token('=').with(val(Symbol::Assign))
+    )
 }
