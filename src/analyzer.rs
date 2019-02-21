@@ -650,3 +650,20 @@ impl<A, B> Analyzer for Fail<A, B> {
         ))
     }
 }
+
+#[derive(Clone, Debug)]
+pub enum Either<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> {
+    Right(A),
+    Left(B),
+}
+
+impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer for Either<A, B> {
+    type Input = A::Input;
+    type Output = A::Output;
+    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
+        match self {
+            Either::Right(x) => x.analyze(st),
+            Either::Left(x) => x.analyze(st),
+        }
+    }
+}
