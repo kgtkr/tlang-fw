@@ -1,5 +1,6 @@
 use crate::analyzer;
 use crate::analyzer::{eof, expect, token, tokens, val, Analyzer};
+use crate::stream::Stream;
 use crate::token::Token;
 
 struct Lexer {
