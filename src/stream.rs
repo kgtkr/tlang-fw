@@ -8,6 +8,10 @@ impl<T: Clone> Stream<T> {
 }
 
 impl<T> Stream<T> {
+    pub fn new(data: Vec<T>) -> Self {
+        Stream(data, 0)
+    }
+
     pub fn pos(&self) -> usize {
         self.1
     }
