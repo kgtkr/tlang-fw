@@ -136,13 +136,6 @@ pub trait Analyzer {
         Msg::new(self, msg)
     }
 
-    fn not(self) -> Not<Self>
-    where
-        Self: Sized,
-    {
-        Not::new(self)
-    }
-
     fn then<F: Fn(Self::Output) -> B, B: Analyzer<Input = Self::Input>>(
         self,
         f: F,
@@ -572,31 +565,6 @@ impl<A: Analyzer> Analyzer for Msg<A> {
             e.expecting = self.1.clone();
             e
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Not<A: Analyzer>(A);
-
-impl<A: Analyzer> Not<A> {
-    pub fn new(a: A) -> Self {
-        Not(a)
-    }
-}
-
-impl<A: Analyzer> Analyzer for Not<A> {
-    type Input = A::Input;
-    type Output = ();
-    fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output> {
-        let pos = st.pos();
-        match self.0.analyze(st) {
-            Ok(_) => Err(AnalyzerError::new(
-                pos,
-                "???".to_string(),
-                "???".to_string(),
-            )),
-            Err(_) => Ok(()),
-        }
     }
 }
 
