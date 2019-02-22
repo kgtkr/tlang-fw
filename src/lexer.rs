@@ -14,10 +14,6 @@ pub fn space() -> impl Analyzer<Input = char, Output = ()> {
     analyzer::or!(token(' '), token('\n'), token('\t')).with(val(()))
 }
 
-pub fn spaces() -> impl Analyzer<Input = char, Output = ()> {
-    space().many().with(val(()))
-}
-
 pub fn line_comment() -> impl Analyzer<Input = char, Output = ()> {
     string("//")
         .with(expect(|&x| x != '\n').many())
@@ -47,7 +43,7 @@ pub fn comment() -> impl Analyzer<Input = char, Output = ()> {
 }
 
 pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
-    spaces().or(comment()).many().with(val(()))
+    space().or(comment()).many().with(val(()))
 }
 
 pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
