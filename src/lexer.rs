@@ -114,10 +114,10 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
 }
 
 pub fn lexer() -> impl Analyzer<Input = char, Output = Vec<Token>> {
-    skip().with(oneToken()).many1().skip(skip()).skip(eof())
+    skip().with(one_token()).many1().skip(skip()).skip(eof())
 }
 
-pub fn oneToken() -> impl Analyzer<Input = char, Output = Token> {
+pub fn one_token() -> impl Analyzer<Input = char, Output = Token> {
     analyzer_func(|st| {
         let pos = st.pos();
         let kind = kind().analyze(st)?;
