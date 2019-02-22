@@ -1,10 +1,10 @@
 use crate::analyzer;
 use crate::analyzer::{
     analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
-    AnalyzerResult, Either, Literal,
+    AnalyzerResult, Either,
 };
 use crate::stream::Stream;
-use crate::token::{Keyword, Kind, NumLiteral, Symbol, Token};
+use crate::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
 
 pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
@@ -111,6 +111,10 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
             Some(x) => Either::Right(val(x)),
             None => Either::Left(fail()),
         })
+}
+
+pub fn lexer() -> impl Analyzer<Input = char, Output = Vec<Token>> {
+    skip().with(oneToken()).many1().skip(skip()).skip(eof())
 }
 
 pub fn oneToken() -> impl Analyzer<Input = char, Output = Token> {

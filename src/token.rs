@@ -1,8 +1,8 @@
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
-    kind: Kind,
-    pos: usize,
-    len: usize,
+    pub kind: Kind,
+    pub pos: usize,
+    pub len: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +17,7 @@ pub enum Kind {
 pub enum Literal {
     Char(char),
     String(String),
-    NumLiteral(NumLiteral),
+    Num(NumLiteral),
 }
 
 #[derive(Clone, Debug, PartialEq)]
