@@ -10,19 +10,27 @@ pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
-pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
-    let spaces = analyzer::or!(token(' '), token('\n'), token('\t'))
-        .many()
-        .with(val(()));
-    let line_comment = string("//")
+pub fn space() -> impl Analyzer<Input = char, Output = ()> {
+    analyzer::or!(token(' '), token('\n'), token('\t')).with(val(()))
+}
+
+pub fn spaces() -> impl Analyzer<Input = char, Output = ()> {
+    space().many().with(val(()))
+}
+
+pub fn line_comment() -> impl Analyzer<Input = char, Output = ()> {
+    string("//")
         .with(expect(|&x| x != '\n').many())
         .with(token('\n').optional())
-        .with(val(()));
-    fn block_comment_f(st: &mut Stream<char>) -> AnalyzerResult<()> {
+        .with(val(()))
+}
+
+pub fn block_comment() -> impl Analyzer<Input = char, Output = ()> {
+    analyzer_func(|st| {
         string("/*")
             .with(
                 analyzer_func(|st| match (st.peak(), st.peak_index(1)) {
-                    (Some('/'), Some('*')) => block_comment_f(st),
+                    (Some('/'), Some('*')) => block_comment().analyze(st),
                     (Some('*'), Some('/')) => fail().analyze(st),
                     _ => any_one().with(val(())).analyze(st),
                 })
@@ -31,12 +39,15 @@ pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
             .with(string("*/"))
             .with(val(()))
             .analyze(st)
-    }
-    let block_comment = analyzer_func(block_comment_f);
+    })
+}
 
-    let comment = line_comment.attempt().or(block_comment);
+pub fn comment() -> impl Analyzer<Input = char, Output = ()> {
+    line_comment().attempt().or(block_comment())
+}
 
-    spaces.or(comment).many().with(val(()))
+pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
+    spaces().or(comment()).many().with(val(()))
 }
 
 pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
