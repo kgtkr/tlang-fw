@@ -403,6 +403,7 @@ impl<A: Analyzer> Analyzer for Loop<A> {
                 }
             }
 
+            let pos = st.pos();
             match self.0.analyze(st) {
                 Ok(x) => res.push(x),
                 Err(e) => {
@@ -410,6 +411,9 @@ impl<A: Analyzer> Analyzer for Loop<A> {
                         if res.len() < min {
                             return Err(e);
                         }
+                    }
+                    if st.pos() != pos {
+                        return Err(e);
                     }
                     break;
                 }

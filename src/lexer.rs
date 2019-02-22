@@ -43,7 +43,7 @@ pub fn comment() -> impl Analyzer<Input = char, Output = ()> {
 }
 
 pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
-    space().or(comment()).many().with(val(()))
+    space().or(comment())
 }
 
 pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
@@ -121,7 +121,12 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
 }
 
 pub fn lexer() -> impl Analyzer<Input = char, Output = Vec<Token>> {
-    skip().with(one_token()).many1().skip(skip()).skip(eof())
+    skip()
+        .map(|_| None)
+        .or(one_token().map(Some))
+        .many()
+        .map(|x| x.into_iter().filter_map(|x| x).collect::<Vec<_>>())
+        .skip(eof())
 }
 
 pub fn one_token() -> impl Analyzer<Input = char, Output = Token> {
