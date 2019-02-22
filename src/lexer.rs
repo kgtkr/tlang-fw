@@ -155,30 +155,19 @@ pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
 }
 
 pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
-    analyzer_func(move |st| {
-        let c = any_one().analyze(st)?;
-        if c == '\\' {
-            let pos = st.pos();
-            let c = any_one().analyze(st)?;
-            match c {
-                't' => Ok('\t'),
-                'n' => Ok('\n'),
-                'r' => Ok('\r'),
-                '\\' => Ok('\\'),
-                c if c == lit => Ok(c),
-                'x' => hex_char(2).analyze(st),
-                'u' => hex_char(4).analyze(st),
-                'U' => hex_char(8).analyze(st),
-                c => Err(AnalyzerError::new(
-                    pos,
-                    "t or n or r or \\ or x or u or U".to_string(),
-                    c.to_string(),
-                )),
-            }
-        } else {
-            Ok(c)
-        }
-    })
+    analyzer::or!(
+        token('\\').with(analyzer::or!(
+            token('t').val('\t'),
+            token('n').val('\n'),
+            token('r').val('\r'),
+            token('\\').val('\\'),
+            token(lit).val(lit),
+            token('x').with(hex_char(2)),
+            token('u').with(hex_char(4)),
+            token('U').with(hex_char(8))
+        )),
+        expect(move |&x| x != lit)
+    )
 }
 
 pub fn char_literal() -> impl Analyzer<Input = char, Output = char> {
