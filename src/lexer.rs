@@ -4,7 +4,7 @@ use crate::analyzer::{
     AnalyzerResult, Either,
 };
 use crate::stream::Stream;
-use crate::token::{Keyword, Kind, Symbol, Token};
+use crate::token::{Keyword, Kind, NumLiteral, Symbol, Token};
 
 pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
@@ -45,6 +45,56 @@ pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
         .map(|(x, mut xs)| {
             xs.insert(0, x);
             xs.into_iter().collect::<String>()
+        })
+}
+
+pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
+    let num = expect::<char, _>(|&c| c.is_ascii_digit())
+        .many1()
+        .map(|x| x.into_iter().collect::<String>());
+    num.clone()
+        .and(token('.').and(num).optional())
+        .and(ident_str().optional())
+        .then(|((s1, dot_num), suffix)| {
+            let suffix = suffix.as_ref().map(|x| x.as_str());
+            if let Some((_, s2)) = dot_num {
+                let s = format!("{}.{}", s1, s2);
+                match suffix {
+                    None | Some("f64") => {
+                        if let Ok(x) = s.parse::<f64>() {
+                            Either::Right(val(NumLiteral::F64(x)))
+                        } else {
+                            Either::Left(fail())
+                        }
+                    }
+                    Some("f32") => {
+                        if let Ok(x) = s.parse::<f32>() {
+                            Either::Right(val(NumLiteral::F32(x)))
+                        } else {
+                            Either::Left(fail())
+                        }
+                    }
+                    _ => Either::Left(fail()),
+                }
+            } else {
+                match suffix {
+                    None | Some("i32") => {
+                        if let Ok(x) = s1.parse::<i32>() {
+                            Either::Right(val(NumLiteral::I32(x)))
+                        } else {
+                            Either::Left(fail())
+                        }
+                    }
+                    Some("i64") => {
+                        if let Ok(x) = s1.parse::<i64>() {
+                            Either::Right(val(NumLiteral::I64(x)))
+                        } else {
+                            Either::Left(fail())
+                        }
+                    }
+                    _ => Either::Left(fail()),
+                }
+            }
         })
 }
 
