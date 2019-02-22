@@ -21,7 +21,7 @@ impl<T> Stream<T> {
     }
 
     pub fn set_pos(&mut self, pos: usize) -> Option<()> {
-        if pos < self.0.len() {
+        if pos <= self.0.len() {
             self.1 = pos;
             Some(())
         } else {
