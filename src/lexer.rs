@@ -67,38 +67,26 @@ pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
             if let Some((_, s2)) = dot_num {
                 let s = format!("{}.{}", s1, s2);
                 match suffix {
-                    None | Some("f64") => {
-                        if let Ok(x) = s.parse::<f64>() {
-                            Either::Right(val(NumLiteral::F64(x)))
-                        } else {
-                            Either::Left(fail())
-                        }
-                    }
-                    Some("f32") => {
-                        if let Ok(x) = s.parse::<f32>() {
-                            Either::Right(val(NumLiteral::F32(x)))
-                        } else {
-                            Either::Left(fail())
-                        }
-                    }
+                    None | Some("f64") => s
+                        .parse::<f64>()
+                        .map(|x| Either::Right(val(NumLiteral::F64(x))))
+                        .unwrap_or(Either::Left(fail())),
+                    Some("f32") => s
+                        .parse::<f32>()
+                        .map(|x| Either::Right(val(NumLiteral::F32(x))))
+                        .unwrap_or(Either::Left(fail())),
                     _ => Either::Left(fail()),
                 }
             } else {
                 match suffix {
-                    None | Some("i32") => {
-                        if let Ok(x) = s1.parse::<i32>() {
-                            Either::Right(val(NumLiteral::I32(x)))
-                        } else {
-                            Either::Left(fail())
-                        }
-                    }
-                    Some("i64") => {
-                        if let Ok(x) = s1.parse::<i64>() {
-                            Either::Right(val(NumLiteral::I64(x)))
-                        } else {
-                            Either::Left(fail())
-                        }
-                    }
+                    None | Some("i32") => s1
+                        .parse::<i32>()
+                        .map(|x| Either::Right(val(NumLiteral::I32(x))))
+                        .unwrap_or(Either::Left(fail())),
+                    Some("i64") => s1
+                        .parse::<i64>()
+                        .map(|x| Either::Right(val(NumLiteral::I64(x))))
+                        .unwrap_or(Either::Left(fail())),
                     _ => Either::Left(fail()),
                 }
             }
