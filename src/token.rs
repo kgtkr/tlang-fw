@@ -17,6 +17,11 @@ pub enum Kind {
 pub enum Literal {
     Char(char),
     String(String),
+    NumLiteral(NumLiteral),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum NumLiteral {
     I32(i32),
     I64(i64),
     F32(f32),
