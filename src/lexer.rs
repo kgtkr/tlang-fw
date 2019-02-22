@@ -84,6 +84,8 @@ pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
                 match suffix {
                     None | Some("i32") => parse::<_, _>(s1, NumLiteral::I32),
                     Some("i64") => parse::<_, _>(s1, NumLiteral::I64),
+                    Some("f32") => parse::<_, _>(s1, NumLiteral::F32),
+                    Some("f64") => parse::<_, _>(s1, NumLiteral::F64),
                     _ => Either::Left(fail()),
                 }
             }
