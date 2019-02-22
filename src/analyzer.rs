@@ -198,7 +198,7 @@ pub fn any_one<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
 
-pub fn eof<T: Clone + Debug>() -> Eof<T> {
+pub fn eof<T: Clone>() -> Eof<T> {
     Eof::new()
 }
 
@@ -206,15 +206,15 @@ pub fn val<T: Clone, I>(x: T) -> Val<T, I> {
     Val::new(x)
 }
 
-pub fn token<T: Clone + Eq + Debug>(x: T) -> Token<T> {
+pub fn token<T: Clone + Eq>(x: T) -> Token<T> {
     Token::new(x)
 }
 
-pub fn tokens<T: Clone + Eq + Debug>(x: Vec<T>) -> Tokens<T> {
+pub fn tokens<T: Clone + Eq>(x: Vec<T>) -> Tokens<T> {
     Tokens::new(x)
 }
 
-pub fn expect<T: Clone + Debug, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
+pub fn expect<T: Clone, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f)
 }
 
@@ -441,15 +441,15 @@ impl<A: Analyzer> Analyzer for Loop<A> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Eof<T: Clone + Debug>(PhantomData<T>);
+pub struct Eof<T: Clone>(PhantomData<T>);
 
-impl<T: Clone + Debug> Eof<T> {
+impl<T: Clone> Eof<T> {
     pub fn new() -> Self {
         Eof(PhantomData)
     }
 }
 
-impl<T: Clone + Debug> Analyzer for Eof<T> {
+impl<T: Clone> Analyzer for Eof<T> {
     type Input = T;
     type Output = ();
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
@@ -466,15 +466,15 @@ impl<T: Clone + Debug> Analyzer for Eof<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Token<T: Clone + Eq + Debug>(T);
+pub struct Token<T: Clone + Eq>(T);
 
-impl<T: Clone + Eq + Debug> Token<T> {
+impl<T: Clone + Eq> Token<T> {
     pub fn new(x: T) -> Self {
         Token(x)
     }
 }
 
-impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
+impl<T: Clone + Eq> Analyzer for Token<T> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
@@ -497,15 +497,15 @@ impl<T: Clone + Eq + Debug> Analyzer for Token<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Tokens<T: Clone + Eq + Debug>(Vec<T>);
+pub struct Tokens<T: Clone + Eq>(Vec<T>);
 
-impl<T: Clone + Eq + Debug> Tokens<T> {
+impl<T: Clone + Eq> Tokens<T> {
     pub fn new(x: Vec<T>) -> Self {
         Tokens(x)
     }
 }
 
-impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
+impl<T: Clone + Eq> Analyzer for Tokens<T> {
     type Input = T;
     type Output = Vec<T>;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
@@ -533,15 +533,15 @@ impl<T: Clone + Eq + Debug> Analyzer for Tokens<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Expect<T: Clone + Debug, F: Fn(&T) -> bool>(F, PhantomData<T>);
+pub struct Expect<T: Clone, F: Fn(&T) -> bool>(F, PhantomData<T>);
 
-impl<T: Clone + Debug, F: Fn(&T) -> bool> Expect<T, F> {
+impl<T: Clone, F: Fn(&T) -> bool> Expect<T, F> {
     pub fn new(f: F) -> Self {
         Expect(f, PhantomData)
     }
 }
 
-impl<T: Clone + Debug, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
+impl<T: Clone, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
