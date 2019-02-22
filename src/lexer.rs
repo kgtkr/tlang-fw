@@ -1,7 +1,7 @@
 use crate::analyzer;
 use crate::analyzer::{
     analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
-    AnalyzerResult, Either,
+    AnalyzerResult, Either, Literal,
 };
 use crate::stream::Stream;
 use crate::token::{Keyword, Kind, NumLiteral, Symbol, Token};
@@ -111,6 +111,14 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
             Some(x) => Either::Right(val(x)),
             None => Either::Left(fail()),
         })
+}
+
+pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
+    analyzer::or!(
+        char_literal().map(Literal::Char),
+        string_literal().map(Literal::String),
+        num_literal().map(Literal::Num)
+    )
 }
 
 pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
