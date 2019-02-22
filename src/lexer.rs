@@ -113,6 +113,14 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
         })
 }
 
+pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
+    analyzer::or!(
+        ident_or_keyword(),
+        symbol().map(Kind::Symbol),
+        literal().map(Kind::Literal)
+    )
+}
+
 pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
     analyzer::or!(
         char_literal().map(Literal::Char),
