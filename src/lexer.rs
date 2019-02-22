@@ -56,6 +56,15 @@ pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
 }
 
 pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
+    fn parse<T: std::str::FromStr, F: Fn(T) -> NumLiteral>(
+        s: String,
+        f: F,
+    ) -> Either<analyzer::Val<NumLiteral, char>, analyzer::Fail<char, NumLiteral>> {
+        s.parse::<T>()
+            .map(|x| Either::Right(val(f(x))))
+            .unwrap_or(Either::Left(fail()))
+    }
+
     let num = expect::<char, _>(|&c| c.is_ascii_digit())
         .many1()
         .map(|x| x.into_iter().collect::<String>());
@@ -67,26 +76,14 @@ pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
             if let Some((_, s2)) = dot_num {
                 let s = format!("{}.{}", s1, s2);
                 match suffix {
-                    None | Some("f64") => s
-                        .parse::<f64>()
-                        .map(|x| Either::Right(val(NumLiteral::F64(x))))
-                        .unwrap_or(Either::Left(fail())),
-                    Some("f32") => s
-                        .parse::<f32>()
-                        .map(|x| Either::Right(val(NumLiteral::F32(x))))
-                        .unwrap_or(Either::Left(fail())),
+                    None | Some("f64") => parse::<_, _>(s, NumLiteral::F64),
+                    Some("f32") => parse::<_, _>(s, NumLiteral::F32),
                     _ => Either::Left(fail()),
                 }
             } else {
                 match suffix {
-                    None | Some("i32") => s1
-                        .parse::<i32>()
-                        .map(|x| Either::Right(val(NumLiteral::I32(x))))
-                        .unwrap_or(Either::Left(fail())),
-                    Some("i64") => s1
-                        .parse::<i64>()
-                        .map(|x| Either::Right(val(NumLiteral::I64(x))))
-                        .unwrap_or(Either::Left(fail())),
+                    None | Some("i32") => parse::<_, _>(s1, NumLiteral::I32),
+                    Some("i64") => parse::<_, _>(s1, NumLiteral::I64),
                     _ => Either::Left(fail()),
                 }
             }
