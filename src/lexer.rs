@@ -113,6 +113,15 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
         })
 }
 
+pub fn oneToken() -> impl Analyzer<Input = char, Output = Token> {
+    analyzer_func(|st| {
+        let pos = st.pos();
+        let kind = kind().analyze(st)?;
+        let len = st.pos() - pos;
+        Ok(Token { pos, kind, len })
+    })
+}
+
 pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
     analyzer::or!(
         ident_or_keyword(),
