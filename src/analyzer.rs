@@ -24,16 +24,12 @@ pub enum ErrorExpect<T> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnalyzerError<T> {
     pos: usize,
-    unexpected: ErrorExpect<T>,
+    unexpected: Option<T>,
     expecting: ErrorExpect<T>,
 }
 
 impl<T> AnalyzerError<T> {
-    pub fn new(
-        pos: usize,
-        unexpected: ErrorExpect<T>,
-        expecting: ErrorExpect<T>,
-    ) -> AnalyzerError<T> {
+    pub fn new(pos: usize, unexpected: Option<T>, expecting: ErrorExpect<T>) -> AnalyzerError<T> {
         AnalyzerError {
             pos,
             unexpected,
@@ -241,11 +237,9 @@ impl<T: Clone> Analyzer for AnyOne<T> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
-        let val = st.peak().ok_or(AnalyzerError::new(
-            st.pos(),
-            ErrorExpect::Eof,
-            ErrorExpect::Any,
-        ))?;
+        let val = st
+            .peak()
+            .ok_or(AnalyzerError::new(st.pos(), None, ErrorExpect::Any))?;
         st.next();
         Ok(val)
     }
@@ -454,11 +448,7 @@ impl<T: Clone> Analyzer for Eof<T> {
     type Output = ();
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
         if let Some(x) = st.peak() {
-            Err(AnalyzerError::new(
-                st.pos(),
-                ErrorExpect::Token(x),
-                ErrorExpect::Eof,
-            ))
+            Err(AnalyzerError::new(st.pos(), Some(x), ErrorExpect::Eof))
         } else {
             Ok(())
         }
@@ -480,7 +470,7 @@ impl<T: Clone + Eq> Analyzer for Token<T> {
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
         let res = st.peak().ok_or(AnalyzerError::new(
             st.pos(),
-            ErrorExpect::Eof,
+            None,
             ErrorExpect::Token(self.0.clone()),
         ))?;
         if res == self.0 {
@@ -489,7 +479,7 @@ impl<T: Clone + Eq> Analyzer for Token<T> {
         } else {
             Err(AnalyzerError::new(
                 st.pos(),
-                ErrorExpect::Token(res),
+                Some(res),
                 ErrorExpect::Token(self.0.clone()),
             ))
         }
@@ -514,7 +504,7 @@ impl<T: Clone + Eq> Analyzer for Tokens<T> {
         for x in self.0.iter() {
             let y = st.peak().ok_or(AnalyzerError::new(
                 st.pos(),
-                ErrorExpect::Eof,
+                None,
                 ErrorExpect::Token(x.clone()),
             ))?;
             if x.clone() == y {
@@ -523,7 +513,7 @@ impl<T: Clone + Eq> Analyzer for Tokens<T> {
             } else {
                 return Err(AnalyzerError::new(
                     st.pos(),
-                    ErrorExpect::Token(y),
+                    Some(y),
                     ErrorExpect::Token(x.clone()),
                 ));
             }
@@ -545,21 +535,15 @@ impl<T: Clone, F: Fn(&T) -> bool> Analyzer for Expect<T, F> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
-        let x = st.peak().ok_or(AnalyzerError::new(
-            st.pos(),
-            ErrorExpect::Eof,
-            ErrorExpect::Unknown,
-        ))?;
+        let x = st
+            .peak()
+            .ok_or(AnalyzerError::new(st.pos(), None, ErrorExpect::Unknown))?;
 
         if self.0(&x) {
             st.next();
             Ok(x)
         } else {
-            Err(AnalyzerError::new(
-                st.pos(),
-                ErrorExpect::Token(x),
-                ErrorExpect::Unknown,
-            ))
+            Err(AnalyzerError::new(st.pos(), Some(x), ErrorExpect::Unknown))
         }
     }
 }
@@ -649,9 +633,7 @@ impl<A: Clone, B> Analyzer for Fail<A, B> {
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
         Err(AnalyzerError::new(
             st.pos(),
-            st.peak()
-                .map(ErrorExpect::Token)
-                .unwrap_or(ErrorExpect::Eof),
+            st.peak().map(Some).unwrap_or(None),
             ErrorExpect::Unknown,
         ))
     }
