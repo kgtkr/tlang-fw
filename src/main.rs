@@ -1,5 +1,9 @@
 use std::fs;
-use tkr_lang::{analyzer::Analyzer, lexer::lexer, stream::Stream};
+use tkr_lang::{
+    analyzer::{self, Analyzer},
+    lexer::{self, lexer},
+    stream::Stream,
+};
 
 fn main() {
     let s = fs::read_to_string("test").unwrap();
