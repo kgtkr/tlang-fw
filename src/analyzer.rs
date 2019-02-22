@@ -178,7 +178,7 @@ impl<A: Analyzer> Analyzer for &mut A {
     }
 }
 
-pub fn anyOne<T: Clone>() -> AnyOne<T> {
+pub fn any_one<T: Clone>() -> AnyOne<T> {
     AnyOne::new()
 }
 

@@ -1,6 +1,6 @@
 use crate::analyzer;
 use crate::analyzer::{
-    analyzer_func, anyOne, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
+    analyzer_func, any_one, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
     AnalyzerResult, Either,
 };
 use crate::stream::Stream;
@@ -24,7 +24,7 @@ pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
                 analyzer_func(|st| match (st.peak(), st.peak_index(1)) {
                     (Some('/'), Some('*')) => block_comment_f(st),
                     (Some('*'), Some('/')) => fail().analyze(st),
-                    _ => anyOne().with(val(())).analyze(st),
+                    _ => any_one().with(val(())).analyze(st),
                 })
                 .many(),
             )
@@ -144,10 +144,10 @@ pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
 
 pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
     analyzer_func(move |st| {
-        let c = anyOne().analyze(st)?;
+        let c = any_one().analyze(st)?;
         if c == '\\' {
             let pos = st.pos();
-            let c = anyOne().analyze(st)?;
+            let c = any_one().analyze(st)?;
             match c {
                 't' => Ok('\t'),
                 'n' => Ok('\n'),
