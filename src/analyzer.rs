@@ -80,6 +80,13 @@ pub trait Analyzer {
         And::new(self, x)
     }
 
+    fn val<T: Clone>(self, x: T) -> With<Self, Val<T, Self::Input>>
+    where
+        Self: Sized,
+    {
+        self.with(val(x))
+    }
+
     fn with<T: Analyzer<Input = Self::Input>>(self, x: T) -> With<Self, T>
     where
         Self: Sized,
