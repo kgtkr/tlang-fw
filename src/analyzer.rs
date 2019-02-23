@@ -683,4 +683,14 @@ mod tests {
     ) -> AnalyzerResult<A::Output, A::Input> {
         analyzer.analyze(&mut Stream::new(s.chars().collect()))
     }
+
+    #[test]
+    fn map_test() {
+        let analyzer = token('a').map(|x| (x, x));
+        assert_eq!(Ok(('a', 'a')), parse(&analyzer, "a"));
+        assert_eq!(
+            Err(AnalyzerError::new(0, Some('b'), ErrorExpect::Token('a'))),
+            parse(&analyzer, "b")
+        );
+    }
 }
