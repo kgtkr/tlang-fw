@@ -314,8 +314,15 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer fo
     type Input = A::Input;
     type Output = B::Output;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
+        let pos = st.pos();
         match self.0.analyze(st) {
-            Err(_) => self.1.analyze(st),
+            Err(e) => {
+                if pos == st.pos() {
+                    self.1.analyze(st)
+                } else {
+                    Err(e)
+                }
+            }
             x => x,
         }
     }
@@ -388,7 +395,17 @@ impl<A: Analyzer> Analyzer for Optional<A> {
     type Input = A::Input;
     type Output = Option<A::Output>;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
-        Ok(self.0.analyze(st).ok())
+        let pos = st.pos();
+        match self.0.analyze(st) {
+            Err(e) => {
+                if pos == st.pos() {
+                    Ok(None)
+                } else {
+                    Err(e)
+                }
+            }
+            Ok(x) => Ok(Some(x)),
+        }
     }
 }
 
