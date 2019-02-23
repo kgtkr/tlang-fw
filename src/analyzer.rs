@@ -677,40 +677,62 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer fo
 mod tests {
     use super::*;
 
-    fn parse<A: Analyzer<Input = char>>(
-        analyzer: &A,
-        s: &str,
-    ) -> AnalyzerResult<A::Output, A::Input> {
-        analyzer.analyze(&mut Stream::new(s.chars().collect()))
+    fn helper<A: Analyzer>(
+        analyzer: A,
+        cases: Vec<(Vec<A::Input>, AnalyzerResult<A::Output, A::Input>, usize)>,
+    ) where
+        A::Input: PartialEq + Debug,
+        A::Output: PartialEq + Debug,
+    {
+        for (input, result, pos) in cases {
+            let mut st = Stream::new(input);
+            assert_eq!(result, analyzer.analyze(&mut st));
+            assert_eq!(pos, st.pos());
+        }
     }
 
     #[test]
     fn map_test() {
-        let analyzer = token('a').map(|x| (x, x));
-        assert_eq!(Ok(('a', 'a')), parse(&analyzer, "a"));
-        assert_eq!(
-            Err(AnalyzerError::new(0, Some('b'), ErrorExpect::Token('a'))),
-            parse(&analyzer, "b")
+        helper(
+            token(1).map(|x| x + 1),
+            vec![
+                (vec![1], Ok(2), 1),
+                (
+                    vec![2],
+                    Err(AnalyzerError::new(0, Some(2), ErrorExpect::Token(1))),
+                    0,
+                ),
+            ],
         );
     }
 
     #[test]
     fn attempt_test() {
-        let analyzer = tokens(vec!['a', 'b']).attempt().or(tokens(vec!['a', 'c']));
-        assert_eq!(Ok(vec!['a', 'c']), parse(&analyzer, "ac"));
-        assert_eq!(
-            Err(AnalyzerError::new(1, None, ErrorExpect::Token('c'))),
-            parse(&analyzer, "a")
+        helper(
+            tokens(vec![1, 2]).attempt(),
+            vec![
+                (vec![1, 2], Ok(vec![1, 2]), 2),
+                (
+                    vec![1, 3],
+                    Err(AnalyzerError::new(1, Some(3), ErrorExpect::Token(2))),
+                    0,
+                ),
+            ],
         );
     }
 
     #[test]
     fn any_one_test() {
-        let analyzer = any_one();
-        assert_eq!(Ok('a'), parse(&analyzer, "a"));
-        assert_eq!(
-            Err(AnalyzerError::new(0, None, ErrorExpect::Any)),
-            parse(&analyzer, "")
+        helper(
+            any_one(),
+            vec![
+                (vec![1], Ok(1), 1),
+                (
+                    vec![],
+                    Err(AnalyzerError::new(0, None, ErrorExpect::Any)),
+                    0,
+                ),
+            ],
         );
     }
 }
