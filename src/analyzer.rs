@@ -703,4 +703,14 @@ mod tests {
             parse(&analyzer, "a")
         );
     }
+
+    #[test]
+    fn any_one_test() {
+        let analyzer = any_one();
+        assert_eq!(Ok('a'), parse(&analyzer, "a"));
+        assert_eq!(
+            Err(AnalyzerError::new(0, None, ErrorExpect::Any)),
+            parse(&analyzer, "")
+        );
+    }
 }
