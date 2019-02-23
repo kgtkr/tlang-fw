@@ -735,4 +735,9 @@ mod tests {
             ],
         );
     }
+
+    #[test]
+    fn val_test() {
+        helper(val(2), vec![(vec![1], Ok(2), 0)]);
+    }
 }
