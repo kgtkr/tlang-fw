@@ -693,4 +693,14 @@ mod tests {
             parse(&analyzer, "b")
         );
     }
+
+    #[test]
+    fn attempt_test() {
+        let analyzer = tokens(vec!['a', 'b']).attempt().or(tokens(vec!['a', 'c']));
+        assert_eq!(Ok(vec!['a', 'c']), parse(&analyzer, "ac"));
+        assert_eq!(
+            Err(AnalyzerError::new(1, None, ErrorExpect::Token('c'))),
+            parse(&analyzer, "a")
+        );
+    }
 }
