@@ -740,4 +740,36 @@ mod tests {
     fn val_test() {
         helper(val(2), vec![(vec![1], Ok(2), 0)]);
     }
+
+    #[test]
+    fn or_test() {
+        helper(
+            token(1).or(token(2)),
+            vec![
+                (vec![1], Ok(1), 1),
+                (vec![2], Ok(2), 1),
+                (
+                    vec![3],
+                    Err(AnalyzerError::new(0, Some(3), ErrorExpect::Token(2))),
+                    0,
+                ),
+            ],
+        );
+
+        helper(
+            tokens(vec![1, 2]).or(tokens(vec![1, 3])),
+            vec![
+                (
+                    vec![1, 3],
+                    Err(AnalyzerError::new(1, Some(3), ErrorExpect::Token(2))),
+                    1,
+                ),
+                (
+                    vec![1, 1, 3],
+                    Err(AnalyzerError::new(1, Some(1), ErrorExpect::Token(2))),
+                    1,
+                ),
+            ],
+        );
+    }
 }
