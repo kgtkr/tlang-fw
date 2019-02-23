@@ -672,3 +672,15 @@ impl<A: Analyzer, B: Analyzer<Input = A::Input, Output = A::Output>> Analyzer fo
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse<A: Analyzer<Input = char>>(
+        analyzer: &A,
+        s: &str,
+    ) -> AnalyzerResult<A::Output, A::Input> {
+        analyzer.analyze(&mut Stream::new(s.chars().collect()))
+    }
+}
