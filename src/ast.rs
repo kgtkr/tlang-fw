@@ -63,3 +63,6 @@ pub enum RefType {
     Struct(Ident),
     Func(Vec<Type>, Box<Option<Type>>),
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FuncDef(Ident, Vec<(Ident, Type)>, Option<Type>);
