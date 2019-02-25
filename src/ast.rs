@@ -66,3 +66,12 @@ pub enum RefType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FuncDef(Ident, Vec<(Ident, Type)>, Option<Type>);
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Member {
+    Struct(Ident, Vec<(Ident, Type)>),
+    Func(FuncDef, Expr),
+    ExternFun(FuncDef, String, String),
+}
+
+pub type Module = Vec<Member>;
