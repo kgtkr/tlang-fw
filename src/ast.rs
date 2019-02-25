@@ -46,4 +46,20 @@ pub enum Expr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Type {}
+pub enum Type {
+    I32,
+    I64,
+    F32,
+    F64,
+    Bool,
+    Char,
+    RefType(RefType),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum RefType {
+    String,
+    Array(Box<Type>),
+    Struct(Ident),
+    Func(Vec<Type>, Box<Option<Type>>),
+}
