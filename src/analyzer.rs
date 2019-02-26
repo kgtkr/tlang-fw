@@ -202,11 +202,11 @@ pub fn val<T: Clone, I>(x: T) -> Val<T, I> {
     Val::new(x)
 }
 
-pub fn token<T: Clone + Eq>(x: T) -> Token<T> {
+pub fn token<T: Clone + PartialEq>(x: T) -> Token<T> {
     Token::new(x)
 }
 
-pub fn tokens<T: Clone + Eq>(x: Vec<T>) -> Tokens<T> {
+pub fn tokens<T: Clone + PartialEq>(x: Vec<T>) -> Tokens<T> {
     Tokens::new(x)
 }
 
@@ -473,15 +473,15 @@ impl<T: Clone> Analyzer for Eof<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Token<T: Clone + Eq>(T);
+pub struct Token<T: Clone + PartialEq>(T);
 
-impl<T: Clone + Eq> Token<T> {
+impl<T: Clone + PartialEq> Token<T> {
     pub fn new(x: T) -> Self {
         Token(x)
     }
 }
 
-impl<T: Clone + Eq> Analyzer for Token<T> {
+impl<T: Clone + PartialEq> Analyzer for Token<T> {
     type Input = T;
     type Output = T;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
@@ -504,15 +504,15 @@ impl<T: Clone + Eq> Analyzer for Token<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Tokens<T: Clone + Eq>(Vec<T>);
+pub struct Tokens<T: Clone + PartialEq>(Vec<T>);
 
-impl<T: Clone + Eq> Tokens<T> {
+impl<T: Clone + PartialEq> Tokens<T> {
     pub fn new(x: Vec<T>) -> Self {
         Tokens(x)
     }
 }
 
-impl<T: Clone + Eq> Analyzer for Tokens<T> {
+impl<T: Clone + PartialEq> Analyzer for Tokens<T> {
     type Input = T;
     type Output = Vec<T>;
     fn analyze(&self, st: &mut Stream<Self::Input>) -> AnalyzerResult<Self::Output, Self::Input> {
