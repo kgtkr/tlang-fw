@@ -1,8 +1,10 @@
 [package]
-name = "parser"
+name = "lang_parser"
 version = "0.1.0"
 authors = ["kgtkr <kgtkr.jp@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+ast = { path = "../ast" }
+parser = { path = "../parser" }
 token = { path = "../token" }
