@@ -1,7 +1,7 @@
 
 use ast::ast::Expr;
 use crate::parser::{token, val, Parser};
-use crate::token::{Kind, Symbol};
+use token::token::{Kind, Symbol};
 
 pub fn expr() -> impl Parser<Input = Kind, Output = Expr> {
         unimplemented!();

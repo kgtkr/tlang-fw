@@ -4,7 +4,7 @@ use crate::parser::{
     ParserError, ParserResult, Val,
 };
 use crate::stream::Stream;
-use crate::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
+use token::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
 
 pub fn string(s: &str) -> impl Parser<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())

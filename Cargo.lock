@@ -9,5 +9,10 @@ name = "parser"
 version = "0.1.0"
 dependencies = [
  "ast 0.1.0",
+ "token 0.1.0",
 ]
+
+[[package]]
+name = "token"
+version = "0.1.0"
 

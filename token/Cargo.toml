@@ -1,9 +1,7 @@
 [package]
-name = "parser"
+name = "token"
 version = "0.1.0"
 authors = ["kgtkr <kgtkr.jp@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ast = { path = "../ast" }
-token = { path = "../token" }
