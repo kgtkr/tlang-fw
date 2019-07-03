@@ -4,7 +4,7 @@ use parser::stream::Stream;
 use parser::{
     or,
     parser::{
-        analyzer_func, any_one, eof, expect, fail, token, tokens, val, Either, Fail, Parser,
+        any_one, eof, expect, fail, parser_func, token, tokens, val, Either, Fail, Parser,
         ParserError, ParserResult, Val,
     },
 };
@@ -24,10 +24,10 @@ pub fn line_comment() -> impl Parser<Input = char, Output = ()> {
 }
 
 pub fn block_comment() -> impl Parser<Input = char, Output = ()> {
-    analyzer_func(|st| {
+    parser_func(|st| {
         string("/*")
             .with(
-                analyzer_func(|st| match (st.peak(), st.peak_index(1)) {
+                parser_func(|st| match (st.peak(), st.peak_index(1)) {
                     (Some('/'), Some('*')) => block_comment().parse(st),
                     (Some('*'), Some('/')) => fail().parse(st),
                     _ => any_one().with(val(())).parse(st),
@@ -119,7 +119,7 @@ pub fn lexer() -> impl Parser<Input = char, Output = Vec<Token>> {
 }
 
 pub fn one_token() -> impl Parser<Input = char, Output = Token> {
-    analyzer_func(|st| {
+    parser_func(|st| {
         let pos = st.pos();
         let kind = kind().parse(st)?;
         let len = st.pos() - pos;
@@ -174,7 +174,7 @@ pub fn string_literal() -> impl Parser<Input = char, Output = String> {
 }
 
 pub fn ident_or_keyword() -> impl Parser<Input = char, Output = Kind> {
-    analyzer_func(|st| {
+    parser_func(|st| {
         let s = ident_str().parse(st)?;
         Ok(match s.as_ref() {
             "i32" => Kind::Keyword(Keyword::I32),

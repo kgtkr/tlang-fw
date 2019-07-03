@@ -60,10 +60,7 @@ pub type ParserResult<O, I> = Result<O, ParserError<I>>;
 pub trait Parser {
     type Input;
     type Output;
-    fn parse(
-        &self,
-        stream: &mut Stream<Self::Input>,
-    ) -> ParserResult<Self::Output, Self::Input>;
+    fn parse(&self, stream: &mut Stream<Self::Input>) -> ParserResult<Self::Output, Self::Input>;
     fn map<T, F: Fn(Self::Output) -> T>(self, f: F) -> Map<T, Self, F>
     where
         Self: Sized,
@@ -215,10 +212,8 @@ pub fn expect<T: Clone, F: Fn(&T) -> bool>(f: F) -> Expect<T, F> {
     Expect::new(f)
 }
 
-pub fn analyzer_func<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B>(
-    f: F,
-) -> AnalyzerFunc<F, A, B> {
-    AnalyzerFunc::new(f)
+pub fn parser_func<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B>(f: F) -> ParserFunc<F, A, B> {
+    ParserFunc::new(f)
 }
 
 pub fn fail<A: Clone, B>() -> Fail<A, B> {
@@ -617,18 +612,15 @@ impl<A: Parser, F: Fn(A::Output) -> B, B: Parser<Input = A::Input>> Parser for T
 }
 
 #[derive(Clone, Debug)]
-pub struct AnalyzerFunc<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B>(
-    F,
-    PhantomData<(A, B)>,
-);
+pub struct ParserFunc<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B>(F, PhantomData<(A, B)>);
 
-impl<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B> AnalyzerFunc<F, A, B> {
+impl<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B> ParserFunc<F, A, B> {
     pub fn new(f: F) -> Self {
-        AnalyzerFunc(f, PhantomData)
+        ParserFunc(f, PhantomData)
     }
 }
 
-impl<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B> Parser for AnalyzerFunc<F, A, B> {
+impl<F: Fn(&mut Stream<A>) -> ParserResult<B, A>, A, B> Parser for ParserFunc<F, A, B> {
     type Input = A;
     type Output = B;
     fn parse(&self, st: &mut Stream<Self::Input>) -> ParserResult<Self::Output, Self::Input> {
