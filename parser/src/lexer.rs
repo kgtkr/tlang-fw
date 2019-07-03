@@ -1,52 +1,52 @@
-use crate::analyzer;
-use crate::analyzer::{
-    analyzer_func, any_one, eof, expect, fail, token, tokens, val, Analyzer, AnalyzerError,
-    AnalyzerResult, Either,
+use crate::parser;
+use crate::parser::{
+    analyzer_func, any_one, eof, expect, fail, token, tokens, val, Either, Fail, Parser,
+    ParserError, ParserResult, Val,
 };
 use crate::stream::Stream;
 use crate::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
 
-pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
+pub fn string(s: &str) -> impl Parser<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }
 
-pub fn space() -> impl Analyzer<Input = char, Output = ()> {
+pub fn space() -> impl Parser<Input = char, Output = ()> {
     or!(token(' '), token('\n'), token('\t')).with(val(()))
 }
 
-pub fn line_comment() -> impl Analyzer<Input = char, Output = ()> {
+pub fn line_comment() -> impl Parser<Input = char, Output = ()> {
     string("//")
         .with(expect(|&x| x != '\n').many())
         .with(token('\n').optional())
         .with(val(()))
 }
 
-pub fn block_comment() -> impl Analyzer<Input = char, Output = ()> {
+pub fn block_comment() -> impl Parser<Input = char, Output = ()> {
     analyzer_func(|st| {
         string("/*")
             .with(
                 analyzer_func(|st| match (st.peak(), st.peak_index(1)) {
-                    (Some('/'), Some('*')) => block_comment().analyze(st),
-                    (Some('*'), Some('/')) => fail().analyze(st),
-                    _ => any_one().with(val(())).analyze(st),
+                    (Some('/'), Some('*')) => block_comment().parse(st),
+                    (Some('*'), Some('/')) => fail().parse(st),
+                    _ => any_one().with(val(())).parse(st),
                 })
                 .many(),
             )
             .with(string("*/"))
             .with(val(()))
-            .analyze(st)
+            .parse(st)
     })
 }
 
-pub fn comment() -> impl Analyzer<Input = char, Output = ()> {
+pub fn comment() -> impl Parser<Input = char, Output = ()> {
     line_comment().attempt().or(block_comment())
 }
 
-pub fn skip() -> impl Analyzer<Input = char, Output = ()> {
+pub fn skip() -> impl Parser<Input = char, Output = ()> {
     space().or(comment())
 }
 
-pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
+pub fn ident_str() -> impl Parser<Input = char, Output = String> {
     expect::<char, _>(|&c| c.is_ascii_alphabetic())
         .and(expect::<char, _>(|&c| c.is_ascii_alphanumeric() || c == '_').many())
         .map(|(x, mut xs)| {
@@ -55,11 +55,11 @@ pub fn ident_str() -> impl Analyzer<Input = char, Output = String> {
         })
 }
 
-pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
+pub fn num_literal() -> impl Parser<Input = char, Output = NumLiteral> {
     fn parse<T: std::str::FromStr, F: Fn(T) -> NumLiteral>(
         s: String,
         f: F,
-    ) -> Either<analyzer::Val<NumLiteral, char>, analyzer::Fail<char, NumLiteral>> {
+    ) -> Either<Val<NumLiteral, char>, Fail<char, NumLiteral>> {
         s.parse::<T>()
             .map(|x| Either::Right(val(f(x))))
             .unwrap_or(Either::Left(fail()))
@@ -92,7 +92,7 @@ pub fn num_literal() -> impl Analyzer<Input = char, Output = NumLiteral> {
         })
 }
 
-pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
+pub fn hex_char(len: usize) -> impl Parser<Input = char, Output = char> {
     expect::<char, _>(|&x| x.is_ascii_digit() || ('a' <= x && x <= 'f') || ('A' <= x && x <= 'F'))
         .map(|x| x.to_ascii_lowercase())
         .many_n(len)
@@ -107,7 +107,7 @@ pub fn hex_char(len: usize) -> impl Analyzer<Input = char, Output = char> {
         })
 }
 
-pub fn lexer() -> impl Analyzer<Input = char, Output = Vec<Token>> {
+pub fn lexer() -> impl Parser<Input = char, Output = Vec<Token>> {
     skip()
         .map(|_| None)
         .or(one_token().map(Some))
@@ -116,16 +116,16 @@ pub fn lexer() -> impl Analyzer<Input = char, Output = Vec<Token>> {
         .skip(eof())
 }
 
-pub fn one_token() -> impl Analyzer<Input = char, Output = Token> {
+pub fn one_token() -> impl Parser<Input = char, Output = Token> {
     analyzer_func(|st| {
         let pos = st.pos();
-        let kind = kind().analyze(st)?;
+        let kind = kind().parse(st)?;
         let len = st.pos() - pos;
         Ok(Token { pos, kind, len })
     })
 }
 
-pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
+pub fn kind() -> impl Parser<Input = char, Output = Kind> {
     or!(
         ident_or_keyword(),
         symbol().map(Kind::Symbol),
@@ -133,7 +133,7 @@ pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
     )
 }
 
-pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
+pub fn literal() -> impl Parser<Input = char, Output = Literal> {
     or!(
         char_literal().map(Literal::Char),
         string_literal().map(Literal::String),
@@ -141,7 +141,7 @@ pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
     )
 }
 
-pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
+pub fn literal_char(lit: char) -> impl Parser<Input = char, Output = char> {
     or!(
         token('\\').with(or!(
             token('t').val('\t'),
@@ -157,11 +157,11 @@ pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
     )
 }
 
-pub fn char_literal() -> impl Analyzer<Input = char, Output = char> {
+pub fn char_literal() -> impl Parser<Input = char, Output = char> {
     token('\'').with(literal_char('\'')).skip(token('\''))
 }
 
-pub fn string_literal() -> impl Analyzer<Input = char, Output = String> {
+pub fn string_literal() -> impl Parser<Input = char, Output = String> {
     token('\"')
         .with(
             literal_char('\"')
@@ -171,9 +171,9 @@ pub fn string_literal() -> impl Analyzer<Input = char, Output = String> {
         .skip(token('\"'))
 }
 
-pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
+pub fn ident_or_keyword() -> impl Parser<Input = char, Output = Kind> {
     analyzer_func(|st| {
-        let s = ident_str().analyze(st)?;
+        let s = ident_str().parse(st)?;
         Ok(match s.as_ref() {
             "i32" => Kind::Keyword(Keyword::I32),
             "i64" => Kind::Keyword(Keyword::I64),
@@ -197,7 +197,7 @@ pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
     })
 }
 
-pub fn symbol() -> impl Analyzer<Input = char, Output = Symbol> {
+pub fn symbol() -> impl Parser<Input = char, Output = Symbol> {
     or!(
         token('.').with(val(Symbol::Dot)),
         token(',').with(val(Symbol::Comma)),
