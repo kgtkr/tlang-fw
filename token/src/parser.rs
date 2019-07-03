@@ -1,11 +1,13 @@
-use crate::parser;
-use crate::parser::{
-    analyzer_func, any_one, eof, expect, fail, token, tokens, val, Either, Fail, Parser,
-    ParserError, ParserResult, Val,
-};
-use crate::stream::Stream;
-use token::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
 
+use crate::token::{Keyword, Kind, Literal, NumLiteral, Symbol, Token};
+use parser::stream::Stream;
+use parser::{
+    or,
+    parser::{
+        analyzer_func, any_one, eof, expect, fail, token, tokens, val, Either, Fail, Parser,
+        ParserError, ParserResult, Val,
+    },
+};
 pub fn string(s: &str) -> impl Parser<Input = char, Output = String> {
     tokens(s.chars().collect()).map(|x| x.into_iter().collect())
 }

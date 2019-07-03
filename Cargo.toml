@@ -4,5 +4,4 @@ members = [
     "parser",
     "ast",
     "token",
-    "lang_parser"
 ]

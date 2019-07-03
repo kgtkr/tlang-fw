@@ -1,5 +1,5 @@
 
-use ast::ast::Expr;
+use crate::ast::Expr;
 use parser::parser::{token, val, Parser};
 use token::token::{Kind, Symbol};
 
