@@ -16,5 +16,5 @@ pub fn block() -> impl Analyzer<Input = Kind, Output = Expr> {
                 .many(),
         )
         .and(expr().optional())
-        .map(|(a, b)| Expr::Block(a, box b))
+        .map(|(a, b)| Expr::Block(a, Box::new(b)))
 }

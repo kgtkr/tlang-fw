@@ -4,13 +4,14 @@ use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-pub macro or {
-  ($x:expr) => {
-    $x
-  },
-  ($x:expr, $($xs:tt)+) => {
-    $x.or(or!($($xs)+))
-  }
+#[macro_export]
+macro_rules! or {
+    ($x:expr) => {
+        $x
+    };
+    ($x:expr, $($xs:tt)+) => {
+        $x.or(or!($($xs)+))
+    };
 }
 
 #[derive(Clone, Debug, PartialEq)]

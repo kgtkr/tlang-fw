@@ -1,6 +1,4 @@
-#![feature(decl_macro)]
-#![feature(box_syntax)]
-
+#[macro_use]
 pub mod analyzer;
 pub mod ast;
 pub mod lexer;

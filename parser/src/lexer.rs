@@ -11,7 +11,7 @@ pub fn string(s: &str) -> impl Analyzer<Input = char, Output = String> {
 }
 
 pub fn space() -> impl Analyzer<Input = char, Output = ()> {
-    analyzer::or!(token(' '), token('\n'), token('\t')).with(val(()))
+    or!(token(' '), token('\n'), token('\t')).with(val(()))
 }
 
 pub fn line_comment() -> impl Analyzer<Input = char, Output = ()> {
@@ -126,7 +126,7 @@ pub fn one_token() -> impl Analyzer<Input = char, Output = Token> {
 }
 
 pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
-    analyzer::or!(
+    or!(
         ident_or_keyword(),
         symbol().map(Kind::Symbol),
         literal().map(Kind::Literal)
@@ -134,7 +134,7 @@ pub fn kind() -> impl Analyzer<Input = char, Output = Kind> {
 }
 
 pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
-    analyzer::or!(
+    or!(
         char_literal().map(Literal::Char),
         string_literal().map(Literal::String),
         num_literal().map(Literal::Num)
@@ -142,8 +142,8 @@ pub fn literal() -> impl Analyzer<Input = char, Output = Literal> {
 }
 
 pub fn literal_char(lit: char) -> impl Analyzer<Input = char, Output = char> {
-    analyzer::or!(
-        token('\\').with(analyzer::or!(
+    or!(
+        token('\\').with(or!(
             token('t').val('\t'),
             token('n').val('\n'),
             token('r').val('\r'),
@@ -198,7 +198,7 @@ pub fn ident_or_keyword() -> impl Analyzer<Input = char, Output = Kind> {
 }
 
 pub fn symbol() -> impl Analyzer<Input = char, Output = Symbol> {
-    analyzer::or!(
+    or!(
         token('.').with(val(Symbol::Dot)),
         token(',').with(val(Symbol::Comma)),
         token(':').with(val(Symbol::Colon)),
